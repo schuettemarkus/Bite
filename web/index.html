@@ -258,6 +258,28 @@ a { color: inherit; text-decoration: none; }
 .section-hdr h2 { font-size: 18px; font-weight: 700; color: var(--ink); letter-spacing: -0.02em; }
 .section-hdr a { font-size: 13px; font-weight: 600; color: var(--primary); }
 
+/* ── Home hero with animated bg ──────────────────────── */
+.home-hero {
+  padding: var(--s4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  min-height: calc(100dvh - var(--header-h) - var(--tab-h) - 16px);
+  justify-content: center;
+  position: relative;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 80%, rgba(26, 58, 92, 0.04), transparent),
+    radial-gradient(ellipse 60% 50% at 80% 20%, rgba(232, 146, 47, 0.04), transparent),
+    radial-gradient(ellipse 70% 40% at 50% 50%, rgba(46, 158, 90, 0.03), transparent);
+  background-size: 200% 200%;
+  animation: heroBg 12s ease-in-out infinite alternate;
+}
+@keyframes heroBg {
+  0%   { background-position: 0% 0%; }
+  50%  { background-position: 100% 100%; }
+  100% { background-position: 0% 100%; }
+}
+
 /* ── Home banners — DoorDash-sleek ────────────────────── */
 .decide-banner, .browse-banner {
   width: 100%;
@@ -411,6 +433,8 @@ a { color: inherit; text-decoration: none; }
   flex-shrink: 0;
 }
 .r-card-rating svg { width: 12px; height: 12px; fill: var(--accent); stroke: none; }
+a.r-card-rating { text-decoration: none; cursor: pointer; transition: background var(--d-fast); }
+a.r-card-rating:hover { background: var(--border); }
 .r-card-meta {
   font-size: 13px;
   color: var(--ink-muted);
@@ -1791,14 +1815,14 @@ const App = {
   el() { return document.getElementById('view'); },
 
   header(loc) {
-    const locLabel = loc?.neighborhood
-      ? `${loc.neighborhood}${loc.region ? ', ' + loc.region : ''}`
-      : 'Set location';
+    let locLabel = 'Set location';
+    if (loc?.neighborhood) locLabel = loc.neighborhood + (loc.region ? ', ' + loc.region : '');
+    else if (loc?.formatted) locLabel = loc.formatted;
+    else if (loc?.lat) locLabel = 'Near ' + loc.lat.toFixed(2) + ', ' + loc.lng.toFixed(2);
     return `
       <div class="header">
         <div class="header-logo">
-          <span style="color:var(--primary);">${LogoSVG}</span>
-          <span>bite<span style="color:var(--accent);">.</span></span>
+          <span><span style="color:var(--primary-light);">b</span><span style="color:var(--primary);">ite</span><span style="color:var(--accent);">.</span></span>
         </div>
         <button class="header-loc" id="locChip">
           ${Icons.pin}
@@ -1813,8 +1837,7 @@ const App = {
       <div class="header">
         <button style="width:36px;height:36px;display:grid;place-items:center;border-radius:50%;background:var(--bg-2);flex-shrink:0;" onclick="Router.go('${backTo || 'home'}')">${Icons.back}</button>
         <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:var(--s2);">
-          <span style="color:var(--primary);display:flex;align-items:center;">${LogoSVG}</span>
-          ${title ? `<span style="font-size:15px;font-weight:700;color:var(--ink-muted);">·</span><span style="font-size:15px;font-weight:600;color:var(--ink);">${title}</span>` : `<span style="font-weight:800;font-size:20px;letter-spacing:-0.03em;color:var(--primary);">bite<span style="color:var(--accent);">.</span></span>`}
+          ${title ? `<span style="font-weight:800;font-size:18px;letter-spacing:-0.03em;"><span style="color:var(--primary-light);">b</span><span style="color:var(--primary);">ite</span><span style="color:var(--accent);">.</span></span><span style="font-size:15px;font-weight:700;color:var(--ink-muted);">·</span><span style="font-size:15px;font-weight:600;color:var(--ink);">${title}</span>` : `<span style="font-weight:800;font-size:20px;letter-spacing:-0.03em;"><span style="color:var(--primary-light);">b</span><span style="color:var(--primary);">ite</span><span style="color:var(--accent);">.</span></span>`}
         </div>
         <div style="width:36px;flex-shrink:0;"></div>
       </div>
@@ -1930,7 +1953,7 @@ const App = {
     v.innerHTML = `
       ${this.header(loc)}
       <div class="view">
-        <div style="padding:var(--s4);display:flex;flex-direction:column;gap:var(--s3);min-height:calc(100dvh - var(--header-h) - var(--tab-h) - 16px);justify-content:center;">
+        <div class="home-hero">
           <button class="decide-banner" id="decideBtn">
             <div class="banner-icon">${Icons.go}</div>
             <div class="banner-text">
@@ -2087,10 +2110,10 @@ const App = {
           <div class="r-card-body">
             <div class="r-card-row">
               <div class="r-card-name">${r.name}</div>
-              <div class="r-card-rating">
+              <a class="r-card-rating" href="${r.mapsUrl || '#'}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="See reviews on Google">
                 <svg viewBox="0 0 12 12"><path d="M6 1l1.5 3.2 3.5.4-2.6 2.3.7 3.4L6 8.5 2.9 10.3l.7-3.4L1 4.6l3.5-.4z"/></svg>
                 ${r.rating?.toFixed(1) || '—'}
-              </div>
+              </a>
             </div>
             <div class="r-card-meta">
               <span>${r.cuisine || 'Restaurant'}</span>
@@ -2268,7 +2291,7 @@ const App = {
           <div class="card-meta">
             <span>${r.cuisine}</span><span class="dot"></span><span>${'$'.repeat(Math.max(1, r.priceLevel))}</span><span class="dot"></span><span>${r.distance != null ? r.distance + ' mi' : 'nearby'}</span>
           </div>
-          <div class="card-rating">${r.rating?.toFixed(1) || '—'} stars · ${r.reviewCount?.toLocaleString() || '0'} reviews</div>
+          <a class="card-rating" href="${r.mapsUrl || '#'}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="text-decoration:none;color:var(--ink-muted);">${r.rating?.toFixed(1) || '—'} stars · ${r.reviewCount?.toLocaleString() || '0'} reviews <span style="font-size:11px;color:var(--primary);font-weight:600;">See reviews</span></a>
           ${dietBadgeHtml(r)}
           ${r.tags?.length ? `<div class="card-tags">${r.tags.slice(0,3).map(t => `<span class="card-tag">${t}</span>`).join('')}</div>` : ''}
         </div>
@@ -2428,7 +2451,7 @@ const App = {
                 <span style="display:flex;width:18px;height:18px;">${isSaved ? Icons.heartFilled : Icons.heart}</span>
               </button>
             </div>
-            <div class="match-meta">${r.cuisine} · ${'$'.repeat(Math.max(1, r.priceLevel))} · ${r.distance != null ? r.distance + ' mi away' : 'nearby'} · ${r.rating?.toFixed(1) || '—'} stars</div>
+            <div class="match-meta">${r.cuisine} · ${'$'.repeat(Math.max(1, r.priceLevel))} · ${r.distance != null ? r.distance + ' mi away' : 'nearby'} · <a href="${r.mapsUrl || '#'}" target="_blank" rel="noopener" style="color:var(--primary);font-weight:600;text-decoration:none;">${r.rating?.toFixed(1) || '—'} stars</a></div>
             ${dietBadgeHtml(r)}
 
             <div class="r-detail-ai" style="margin:var(--s4) 0;">
