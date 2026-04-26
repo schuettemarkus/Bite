@@ -266,18 +266,7 @@ a { color: inherit; text-decoration: none; }
   gap: var(--s3);
   min-height: calc(100dvh - var(--header-h) - var(--tab-h) - 16px);
   justify-content: center;
-  position: relative;
-  background:
-    radial-gradient(ellipse 80% 60% at 20% 80%, rgba(26, 58, 92, 0.04), transparent),
-    radial-gradient(ellipse 60% 50% at 80% 20%, rgba(232, 146, 47, 0.04), transparent),
-    radial-gradient(ellipse 70% 40% at 50% 50%, rgba(46, 158, 90, 0.03), transparent);
-  background-size: 200% 200%;
-  animation: heroBg 12s ease-in-out infinite alternate;
-}
-@keyframes heroBg {
-  0%   { background-position: 0% 0%; }
-  50%  { background-position: 100% 100%; }
-  100% { background-position: 0% 100%; }
+  background: var(--surface);
 }
 
 /* ── Home banners — DoorDash-sleek ────────────────────── */
@@ -630,27 +619,28 @@ a.r-card-rating:hover { background: var(--border); }
 /* ── Swipe stack ─────────────────────────────────────── */
 .swipe-shell {
   position: relative;
-  height: calc(100dvh - var(--header-h) - var(--tab-h) - 16px);
+  height: calc(100dvh - var(--header-h) - var(--tab-h) - 8px);
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: var(--s3) var(--s4) 0;
+  padding: var(--s2) var(--s4) 0;
+  overflow: hidden;
 }
 .stack-container {
   position: relative;
   width: 100%;
   flex: 1;
+  min-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 0;
 }
 .card {
   position: absolute;
-  width: 90%;
-  max-width: 360px;
-  aspect-ratio: 3 / 3.8;
+  width: 88%;
+  max-width: 350px;
+  max-height: calc(100% - 8px);
+  aspect-ratio: 3 / 3.6;
   background: var(--surface);
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-lg);
@@ -1376,6 +1366,8 @@ function recommend(mode, candidates, dna, opts = {}) {
   const savedIds = new Set((dna.saved || []).map(s => s.id));
 
   let pool = candidates.filter(r =>
+    !r.isGasStation &&
+    !/gas station|fuel|shell|chevron|exxon|mobil|76|arco|valero|sunoco|bp |marathon petroleum|circle k/i.test(r.name || '') &&
     r.rating >= Config.MIN_RATING &&
     (r.openNow !== false) &&
     (r.distance == null || r.distance <= dna.maxDistance) &&
@@ -1465,16 +1457,18 @@ function whyReasons(restaurant, dna) {
 // AI CUISINE ANALYSIS — generates a smart description from available data
 // ═══════════════════════════════════════════════════════════════════
 function generateAIAnalysis(r) {
-  const parts = [];
+  const bullets = [];
+  const cuisineName = r.cuisine || r.cuisineCategory || 'Restaurant';
+  const priceDesc = ['Budget-friendly', 'Affordable', 'Mid-range', 'Upscale'][Math.max(0, (r.priceLevel || 1) - 1)];
 
-  // Cuisine & vibe
-  const cuisineName = r.cuisine || r.cuisineCategory || 'restaurant';
-  const priceDesc = ['budget-friendly', 'affordable', 'mid-range', 'upscale'][Math.max(0, (r.priceLevel || 1) - 1)];
+  // Core description
+  bullets.push(priceDesc + ' ' + cuisineName.toLowerCase());
 
-  if (r.rating >= 4.5) {
-    parts.push(`Highly rated ${priceDesc} ${cuisineName.toLowerCase()} with ${r.reviewCount?.toLocaleString() || 'many'} reviews.`);
-  } else {
-    parts.push(`Popular ${priceDesc} ${cuisineName.toLowerCase()} spot with a ${r.rating?.toFixed(1)} rating.`);
+  // Reviews — frame as social proof for high-rated popular spots
+  if (r.rating >= 4.5 && r.reviewCount >= 500) {
+    bullets.push('Popular spot based on ' + r.reviewCount.toLocaleString() + '+ ' + r.rating.toFixed(1) + '-star reviews');
+  } else if (r.rating >= 4.0 && r.reviewCount >= 100) {
+    bullets.push('Well-reviewed with ' + r.reviewCount.toLocaleString() + '+ ratings');
   }
 
   // Services
@@ -1482,22 +1476,32 @@ function generateAIAnalysis(r) {
   if (r.dineIn) services.push('dine-in');
   if (r.pickup) services.push('takeout');
   if (r.delivery) services.push('delivery');
-  if (services.length) parts.push(`Offers ${services.join(', ')}.`);
+  if (services.length) bullets.push('Offers ' + services.join(', '));
 
-  // Tags / what to expect
+  // Tags
   if (r.tags?.length) {
-    const tagStr = r.tags.slice(0, 3).map(t => t.toLowerCase()).join(', ');
-    parts.push(`Known for: ${tagStr}.`);
+    bullets.push('Known for ' + r.tags.slice(0, 3).map(function(t) { return t.toLowerCase(); }).join(', '));
   }
 
-  // Distance context
+  // Hours
+  if (r.todayHours && r.todayHours.toLowerCase() !== 'closed') {
+    bullets.push('Today: ' + r.todayHours);
+  }
+
+  // Distance
   if (r.distance != null) {
-    if (r.distance < 0.3) parts.push('Very close — walkable.');
-    else if (r.distance < 1) parts.push(`Short trip — ${r.distance} mi away.`);
-    else parts.push(`${r.distance} mi away, about a ${r.travelTimeMin || Math.round(r.distance * 3)} min drive.`);
+    if (r.distance < 0.3) bullets.push('Walkable distance');
+    else if (r.distance < 1) bullets.push(r.distance + ' mi — short trip');
+    else bullets.push(r.distance + ' mi, ~' + (r.travelTimeMin || Math.round(r.distance * 3)) + ' min drive');
   }
 
-  return parts.join(' ');
+  // Wait time estimate
+  var ctx = getContext();
+  if (ctx.hour >= 11 && ctx.hour <= 13) bullets.push('Currently lunch rush — expect a wait');
+  else if (ctx.hour >= 18 && ctx.hour <= 20) bullets.push('Dinner rush — may be busy');
+  else if (ctx.hour >= 21 || ctx.hour < 6) bullets.push('Off-peak — likely no wait');
+
+  return '<ul style="margin:0;padding-left:18px;list-style:disc;">' + bullets.map(function(b) { return '<li style="margin-bottom:3px;">' + b + '</li>'; }).join('') + '</ul>';
 }
 
 function getMenuHighlights(r) {
@@ -1821,9 +1825,9 @@ const App = {
     else if (loc?.lat) locLabel = 'Near ' + loc.lat.toFixed(2) + ', ' + loc.lng.toFixed(2);
     return `
       <div class="header">
-        <div class="header-logo">
+        <a class="header-logo" href="#home" style="text-decoration:none;">
           <span><span style="color:var(--primary-light);">b</span><span style="color:var(--primary);">ite</span><span style="color:var(--accent);">.</span></span>
-        </div>
+        </a>
         <button class="header-loc" id="locChip">
           ${Icons.pin}
           <span>${locLabel}</span>
@@ -1836,10 +1840,11 @@ const App = {
     return `
       <div class="header">
         <button style="width:36px;height:36px;display:grid;place-items:center;border-radius:50%;background:var(--bg-2);flex-shrink:0;" onclick="Router.go('${backTo || 'home'}')">${Icons.back}</button>
-        <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:var(--s2);">
-          ${title ? `<span style="font-weight:800;font-size:18px;letter-spacing:-0.03em;"><span style="color:var(--primary-light);">b</span><span style="color:var(--primary);">ite</span><span style="color:var(--accent);">.</span></span><span style="font-size:15px;font-weight:700;color:var(--ink-muted);">·</span><span style="font-size:15px;font-weight:600;color:var(--ink);">${title}</span>` : `<span style="font-weight:800;font-size:20px;letter-spacing:-0.03em;"><span style="color:var(--primary-light);">b</span><span style="color:var(--primary);">ite</span><span style="color:var(--accent);">.</span></span>`}
-        </div>
-        <div style="width:36px;flex-shrink:0;"></div>
+        <a class="header-logo" href="#home" style="text-decoration:none;margin-left:var(--s2);">
+          <span><span style="color:var(--primary-light);">b</span><span style="color:var(--primary);">ite</span><span style="color:var(--accent);">.</span></span>
+        </a>
+        ${title ? `<span style="font-size:15px;font-weight:600;color:var(--ink-muted);margin-left:var(--s2);">${title}</span>` : ''}
+        <div style="flex:1;"></div>
       </div>
     `;
   },
@@ -1929,9 +1934,9 @@ const App = {
           document.getElementById('zipToggle').style.display = 'none';
           document.getElementById('zipInput').focus();
         };
-        document.getElementById('zipGo').onclick = async () => {
+        const doZipSearch = async () => {
           const zip = document.getElementById('zipInput').value.trim();
-          if (!zip) return;
+          if (!zip || zip.length < 5) return;
           Haptics.medium();
           const btn = document.getElementById('zipGo');
           btn.textContent = 'Looking up...';
@@ -1944,6 +1949,11 @@ const App = {
             btn.disabled = false;
             toast("Couldn't find that location.");
           }
+        };
+        document.getElementById('zipGo').onclick = doZipSearch;
+        document.getElementById('zipInput').oninput = () => {
+          const val = document.getElementById('zipInput').value.trim();
+          if (val.length >= 5) doZipSearch();
         };
       }
       return;
@@ -2186,7 +2196,9 @@ const App = {
             ${r.pickup ? '<span class="r-detail-pill">Takeout</span>' : ''}
             ${r.delivery ? '<span class="r-detail-pill">Delivery</span>' : ''}
             <span class="r-detail-pill">${'$'.repeat(Math.max(1, r.priceLevel || 1))} price range</span>
-            ${r.reviewCount ? `<span class="r-detail-pill">${r.reviewCount.toLocaleString()} reviews</span>` : ''}
+            ${r.reviewCount ? '<span class="r-detail-pill">' + r.reviewCount.toLocaleString() + ' reviews</span>' : ''}
+            ${r.todayHours ? '<span class="r-detail-pill highlight">Today: ' + r.todayHours + '</span>' : ''}
+            ${r.closingTime && r.openNow ? '<span class="r-detail-pill highlight">Closes ' + r.closingTime + '</span>' : ''}
           </div>
         </div>
 
@@ -2243,7 +2255,18 @@ const App = {
           <div class="skel" style="width:60px;height:60px;border-radius:50%;"></div>
         </div>
       `;
-      this.startSwipe('surprise');
+      const dna = DNA.load();
+      try {
+        const restaurants = await Pool.fetch(loc);
+        const top = recommend('surprise', restaurants, dna, { topN: Config.SWIPE_LIMIT });
+        if (top.length === 0) { toast('No matches found.'); Router.go('home'); return; }
+        this.state.swipeStack = top;
+        this.state.swipeIndex = 0;
+        this.renderSwipe(v);
+      } catch (err) {
+        toast(err.message || 'Could not load restaurants');
+        Router.go('home');
+      }
       return;
     }
 
@@ -2467,14 +2490,11 @@ const App = {
 
             ${(() => {
               const w = estimateWaitTime(r);
-              return '<div class="wait-badge ' + w.level + '" style="margin-top:var(--s4);flex-direction:column;align-items:flex-start;gap:2px;">'
-                + '<div style="display:flex;align-items:center;gap:6px;">'
+              return '<a href="' + (r.mapsUrl || '#') + '" target="_blank" rel="noopener" class="wait-badge ' + w.level + '" style="margin-top:var(--s4);text-decoration:none;cursor:pointer;">'
                 + '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="8" r="6.5"/><path d="M8 4.5v4l2.5 1.5"/></svg>'
-                + '<span style="font-weight:700;">' + w.label + '</span>'
-                + '<span style="opacity:0.7;font-size:11px;">· ' + w.comparison + '</span>'
-                + '</div>'
-                + '<div style="font-size:10px;opacity:0.6;padding-left:20px;">Based on ' + w.source + '</div>'
-                + '</div>';
+                + '<span style="font-weight:600;">' + w.label + '</span>'
+                + '<span style="opacity:0.5;font-size:11px;"> · ' + w.comparison + '</span>'
+                + '</a>';
             })()}
 
             <div class="match-actions">
