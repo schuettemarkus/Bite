@@ -56,6 +56,25 @@ const TYPE_TO_TAG = {
   dessert_shop: 'sweet'
 };
 
+// Types that indicate a gas station / convenience store (excluded from main feed)
+const GAS_STATION_TYPES = new Set([
+  'gas_station', 'fuel_station', 'ev_charging_station'
+]);
+
+// Derive useful indicators from Google types
+function deriveIndicators(types = []) {
+  const indicators = [];
+  const typeSet = new Set(types);
+  if (typeSet.has('bar') || typeSet.has('night_club') || typeSet.has('wine_bar') || typeSet.has('brewery')) indicators.push('serves-alcohol');
+  if (typeSet.has('bar') || typeSet.has('night_club')) indicators.push('21+');
+  if (typeSet.has('family_restaurant') || typeSet.has('fast_food_restaurant') || typeSet.has('pizza_restaurant') || typeSet.has('ice_cream_shop')) indicators.push('kid-friendly');
+  if (typeSet.has('fine_dining_restaurant')) indicators.push('fine-dining');
+  if (typeSet.has('vegan_restaurant')) indicators.push('vegan');
+  if (typeSet.has('vegetarian_restaurant')) indicators.push('vegetarian');
+  if (typeSet.has('fast_food_restaurant') || typeSet.has('meal_takeaway')) indicators.push('quick-service');
+  return indicators;
+}
+
 function haversineMiles(lat1, lng1, lat2, lng2) {
   const R = 3958.8; // earth radius in miles
   const toRad = d => (d * Math.PI) / 180;
@@ -116,11 +135,14 @@ export function normalizePlace(googlePlace, userLat, userLng) {
 
   const name = googlePlace.displayName?.text || 'Unknown';
 
+  const types = googlePlace.types || [];
+  const isGasStation = types.some(t => GAS_STATION_TYPES.has(t));
+
   return {
     id: googlePlace.id,
     name,
     cuisine: humanizeCuisine(googlePlace.primaryType),
-    cuisineCategory: mapToCategory(googlePlace.types),
+    cuisineCategory: mapToCategory(types),
     priceLevel: PRICE_LEVEL_MAP[googlePlace.priceLevel] ?? 2,
     rating: googlePlace.rating,
     reviewCount: googlePlace.userRatingCount || 0,
@@ -128,7 +150,9 @@ export function normalizePlace(googlePlace, userLat, userLng) {
     travelTimeMin: distance != null ? Math.max(1, Math.round(distance * 3)) : null,
     imagePath,
     imageAlt: `${name} photo`,
-    tags: deriveTags(googlePlace.types),
+    tags: deriveTags(types),
+    indicators: deriveIndicators(types),
+    isGasStation,
     address: googlePlace.formattedAddress,
     openNow: googlePlace.currentOpeningHours?.openNow ?? null,
     pickup: googlePlace.takeout ?? false,

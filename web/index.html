@@ -363,6 +363,24 @@ a { color: inherit; text-decoration: none; }
 .r-card-status.open { color: var(--success); }
 .r-card-status.closed { color: var(--danger); }
 .r-card-status .status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.r-card-indicators { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+.indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: var(--r-full);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.indicator.alcohol { background: #EDE9FE; color: #6D28D9; }
+.indicator.age { background: #FEE2E2; color: #B91C1C; }
+.indicator.kids { background: #DBEAFE; color: #1D4ED8; }
+.indicator.vegan { background: #D1FAE5; color: #059669; }
+.indicator.vegetarian { background: #D1FAE5; color: #059669; }
+.indicator.fine { background: #FEF3C7; color: #B45309; }
+.indicator.quick { background: var(--bg-2); color: var(--ink-muted); }
 
 /* ── Expanded restaurant detail ──────────────────────── */
 .r-detail {
@@ -492,24 +510,27 @@ a { color: inherit; text-decoration: none; }
 /* ── Swipe stack ─────────────────────────────────────── */
 .swipe-shell {
   position: relative;
-  height: calc(100dvh - var(--header-h) - var(--tab-h) - 20px);
+  height: calc(100dvh - var(--header-h) - var(--tab-h) - 16px);
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: var(--s4);
+  justify-content: center;
+  padding: var(--s3) var(--s4) 0;
 }
 .stack-container {
   position: relative;
   width: 100%;
   flex: 1;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
 }
 .card {
   position: absolute;
-  width: 92%;
-  max-width: 380px;
-  aspect-ratio: 3 / 4.2;
+  width: 90%;
+  max-width: 360px;
+  aspect-ratio: 3 / 3.8;
   background: var(--surface);
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-lg);
@@ -679,8 +700,22 @@ a { color: inherit; text-decoration: none; }
 .match-action.maps { background: var(--primary); color: white; }
 .match-action.delivery { background: var(--accent-soft); color: var(--accent-dark); }
 .match-action.call { background: var(--bg-2); color: var(--ink-2); }
-.match-action .act-icon { font-size: 18px; }
-.match-action .act-arrow { margin-left: auto; opacity: 0.5; }
+.match-action .act-icon { display: flex; align-items: center; }
+.match-action .act-icon svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+.match-action .act-arrow { margin-left: auto; opacity: 0.4; font-size: 16px; }
+.wait-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--r-md);
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: var(--s3);
+}
+.wait-badge.low { background: var(--success-soft); color: var(--success); }
+.wait-badge.medium { background: var(--accent-soft); color: var(--accent-dark); }
+.wait-badge.high { background: var(--danger-soft); color: var(--danger); }
 .why-reasons { display: flex; flex-wrap: wrap; gap: 6px; padding-top: var(--s4); }
 .why-tag {
   padding: 5px 12px;
@@ -1374,6 +1409,45 @@ function getMapsUrl(r) {
   return r.mapsUrl || `https://maps.google.com/?q=${r.lat},${r.lng}`;
 }
 
+// Estimate wait time based on time of day, day of week, rating popularity
+function estimateWaitTime(r) {
+  const ctx = getContext();
+  let baseMin = 5;
+
+  // Popular restaurants have longer waits
+  if (r.reviewCount > 2000) baseMin += 10;
+  else if (r.reviewCount > 500) baseMin += 5;
+
+  // Peak hours
+  if (ctx.hour >= 11 && ctx.hour <= 13) baseMin += 8;  // lunch rush
+  if (ctx.hour >= 18 && ctx.hour <= 20) baseMin += 12;  // dinner rush
+  if (ctx.hour >= 21 || ctx.hour < 6) baseMin = Math.max(0, baseMin - 5); // late = quieter
+
+  // Weekends are busier
+  if (ctx.isWeekend) baseMin += 5;
+  if (ctx.isWeekend && ctx.meal === 'breakfast') baseMin += 8; // brunch rush
+
+  // Fine dining = longer wait
+  if ((r.indicators || []).includes('fine-dining')) baseMin += 10;
+  // Quick service = shorter
+  if ((r.indicators || []).includes('quick-service')) baseMin = Math.max(0, baseMin - 8);
+
+  // Holiday boost
+  if (ctx.isHoliday) baseMin += 10;
+
+  // Add some randomness so it doesn't feel static
+  const jitter = Math.floor(Math.random() * 6) - 3;
+  baseMin = Math.max(0, baseMin + jitter);
+
+  let level = 'low';
+  let label = 'No wait';
+  if (baseMin > 20) { level = 'high'; label = `~${baseMin} min wait`; }
+  else if (baseMin > 8) { level = 'medium'; label = `~${baseMin} min wait`; }
+  else if (baseMin > 0) { label = `~${baseMin} min wait`; }
+
+  return { min: baseMin, level, label };
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // HAPTICS
 // ═══════════════════════════════════════════════════════════════════
@@ -1530,6 +1604,7 @@ const App = {
       case 'terms':   this.updateTabs('dna'); return this.renderAdmin(v, 'terms');
       case 'faq':     this.updateTabs('dna'); return this.renderAdmin(v, 'faq');
       case 'health':  this.updateTabs('dna'); return this.renderHealth(v);
+      case 'gas':     this.updateTabs('dna'); return this.renderGasStations(v);
       default:        this.updateTabs('home'); Router.go('home');
     }
   },
@@ -1725,7 +1800,7 @@ const App = {
   },
 
   filterFeed(cat) {
-    let filtered = this.state._allRestaurants || [];
+    let filtered = (this.state._allRestaurants || []).filter(r => !r.isGasStation);
     if (cat && cat !== 'all') {
       filtered = filtered.filter(r => (r.cuisineCategory || '').toLowerCase().includes(cat) || (r.cuisine || '').toLowerCase().includes(cat));
     }
@@ -1767,8 +1842,23 @@ const App = {
               <span>${r.distance != null ? r.distance + ' mi' : 'Nearby'}</span>
             </div>
             ${r.tags?.length ? `<div class="r-card-tags">${r.tags.slice(0,3).map(t => `<span class="r-card-tag">${t}</span>`).join('')}</div>` : ''}
-            <div class="r-card-status ${r.openNow ? 'open' : r.openNow === false ? 'closed' : ''}">
-              ${r.openNow === true ? '<span class="status-dot"></span> Open now' : r.openNow === false ? '<span class="status-dot"></span> Closed' : ''}
+            <div style="display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap;">
+              <div class="r-card-status ${r.openNow ? 'open' : r.openNow === false ? 'closed' : ''}" style="margin:0;">
+                ${r.openNow === true ? '<span class="status-dot"></span> Open now' : r.openNow === false ? '<span class="status-dot"></span> Closed' : ''}
+              </div>
+              ${(r.indicators || []).map(ind => {
+                const map = {
+                  'serves-alcohol': { cls: 'alcohol', icon: '🍷', label: 'Alcohol' },
+                  '21+': { cls: 'age', icon: '🔞', label: '21+' },
+                  'kid-friendly': { cls: 'kids', icon: '👨‍👩‍👧', label: 'Kid-friendly' },
+                  'vegan': { cls: 'vegan', icon: '🌱', label: 'Vegan' },
+                  'vegetarian': { cls: 'vegetarian', icon: '🥬', label: 'Vegetarian' },
+                  'fine-dining': { cls: 'fine', icon: '✨', label: 'Fine dining' },
+                  'quick-service': { cls: 'quick', icon: '⚡', label: 'Quick' },
+                };
+                const m = map[ind];
+                return m ? \`<span class="indicator \${m.cls}">\${m.icon} \${m.label}</span>\` : '';
+              }).join('')}
             </div>
           </div>
           ${isExpanded ? this.expandedDetail(r) : ''}
@@ -1809,7 +1899,7 @@ const App = {
       <div class="r-detail">
         <div class="r-detail-section">
           <div class="r-detail-ai">
-            <div class="ai-badge">${Icons.sparkle} AI Analysis</div>
+            <div class="ai-badge">${Icons.sparkle} Highlights</div>
             <div>${analysis}</div>
           </div>
         </div>
@@ -2095,7 +2185,7 @@ const App = {
             <div class="match-meta">${r.cuisine} · ${'$'.repeat(Math.max(1, r.priceLevel))} · ${r.distance != null ? r.distance + ' mi away' : 'nearby'} · ${r.rating?.toFixed(1) || '—'} stars</div>
 
             <div class="r-detail-ai" style="margin:var(--s4) 0;">
-              <div class="ai-badge">${Icons.sparkle} AI Analysis</div>
+              <div class="ai-badge">${Icons.sparkle} Highlights</div>
               <div>${analysis}</div>
             </div>
 
@@ -2105,18 +2195,23 @@ const App = {
               </div>
             ` : ''}
 
-            <div class="match-actions" style="margin-top:var(--s4);">
+            <div class="wait-badge ${(() => { const w = estimateWaitTime(r); return w.level; })()}" style="margin-top:var(--s4);">
+              <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="8" r="6.5"/><path d="M8 4.5v4l2.5 1.5"/></svg>
+              ${estimateWaitTime(r).label}
+            </div>
+
+            <div class="match-actions">
               ${mapsUrl ? `
                 <a class="match-action maps" href="${mapsUrl}" target="_blank" rel="noopener">
-                  <span class="act-icon">${Icons.map}</span><span>Directions</span><span class="act-arrow">→</span>
+                  <span class="act-icon">${Icons.map}</span><span>Directions</span><span class="act-arrow">${Icons.chevron}</span>
                 </a>` : ''}
               ${r.delivery && r.doorDashUrl ? `
                 <a class="match-action delivery" href="${r.doorDashUrl}" target="_blank" rel="noopener">
-                  <span class="act-icon">${Icons.truck}</span><span>Delivery</span><span class="act-arrow">→</span>
+                  <span class="act-icon">${Icons.truck}</span><span>Delivery</span><span class="act-arrow">${Icons.chevron}</span>
                 </a>` : ''}
               ${r.phone ? `
                 <a class="match-action call" href="tel:${r.phone}">
-                  <span class="act-icon">${Icons.phone}</span><span>Call</span><span class="act-arrow">→</span>
+                  <span class="act-icon">${Icons.phone}</span><span>Call</span><span class="act-arrow">${Icons.chevron}</span>
                 </a>` : ''}
             </div>
           </div>
@@ -2417,6 +2512,14 @@ const App = {
         </div>
 
         <div class="settings-group">
+          <div class="settings-title">Utilities</div>
+          <a class="settings-row" href="#gas" style="cursor:pointer;text-decoration:none;">
+            <span>⛽ Find Gas Stations</span>
+            <span style="color:var(--ink-soft)">→</span>
+          </a>
+        </div>
+
+        <div class="settings-group">
           <div class="settings-title">System</div>
           <a class="settings-row" href="#health" style="cursor:pointer;text-decoration:none;">
             <span>System Health</span>
@@ -2627,6 +2730,86 @@ const App = {
         <button class="btn-primary" style="margin-top:var(--s5);max-width:100%;" onclick="App.renderHealth(App.el())">Re-check</button>
       </div>
     `;
+  },
+
+  // ─── Gas Stations ────────────────────────────────────────────────
+  async renderGasStations(v) {
+    const loc = Location.load();
+    if (!loc) { Router.go('home'); return; }
+
+    v.innerHTML = `
+      ${this.subHeader('Gas Stations', 'settings')}
+      <div class="view" style="padding:var(--s4);">
+        <div style="text-align:center;padding:var(--s8) 0;">
+          <div class="skel" style="width:40px;height:40px;border-radius:50%;margin:0 auto var(--s4);"></div>
+          <p style="color:var(--ink-muted);font-size:14px;">Finding nearby gas stations...</p>
+        </div>
+      </div>
+    `;
+
+    try {
+      // Fetch nearby with gas station type via a direct API call
+      const res = await API._fetch(`/api/nearby?lat=${loc.lat}&lng=${loc.lng}&radius=8000`);
+      const allRestaurants = res.restaurants || [];
+
+      // Filter to gas stations if any, otherwise show message
+      // Note: since our Worker only queries restaurant types, gas stations won't
+      // appear there. We'll use the user's location to link to Google Maps gas search.
+      const mapsGasUrl = `https://www.google.com/maps/search/gas+station/@${loc.lat},${loc.lng},14z`;
+      const appleMapsGasUrl = `maps://maps.apple.com/?q=gas+station&ll=${loc.lat},${loc.lng}`;
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+      v.innerHTML = `
+        ${this.subHeader('Gas Stations', 'settings')}
+        <div class="view" style="padding:var(--s4);">
+          <div style="text-align:center;padding:var(--s5) 0 var(--s6);">
+            <div style="font-size:48px;margin-bottom:var(--s3);">⛽</div>
+            <h2 style="font-size:20px;font-weight:700;margin-bottom:var(--s2);">Find Gas Nearby</h2>
+            <p style="font-size:14px;color:var(--ink-muted);max-width:280px;margin:0 auto var(--s5);">
+              Opens your maps app with gas stations near your current location.
+            </p>
+          </div>
+
+          <a href="${isIOS ? appleMapsGasUrl : mapsGasUrl}" target="_blank" rel="noopener"
+             class="match-action maps" style="margin-bottom:var(--s3);justify-content:center;">
+            ${Icons.map}
+            <span>Open Gas Stations in Maps</span>
+          </a>
+
+          <div style="display:flex;gap:var(--s2);margin-bottom:var(--s4);">
+            <a href="https://www.google.com/maps/search/gas+station/@${loc.lat},${loc.lng},14z" target="_blank" rel="noopener"
+               class="r-detail-btn secondary" style="flex:1;text-decoration:none;">
+              Google Maps
+            </a>
+            <a href="maps://maps.apple.com/?q=gas+station&ll=${loc.lat},${loc.lng}" target="_blank" rel="noopener"
+               class="r-detail-btn secondary" style="flex:1;text-decoration:none;">
+              Apple Maps
+            </a>
+            <a href="https://www.waze.com/ul?q=gas+station&ll=${loc.lat},${loc.lng}&navigate=yes" target="_blank" rel="noopener"
+               class="r-detail-btn secondary" style="flex:1;text-decoration:none;">
+              Waze
+            </a>
+          </div>
+
+          <div style="background:var(--primary-soft);border-radius:var(--r-md);padding:var(--s4);margin-top:var(--s4);">
+            <div style="font-size:12px;font-weight:700;color:var(--primary);margin-bottom:var(--s2);">💡 Tip</div>
+            <p style="font-size:13px;color:var(--ink-2);line-height:1.6;">
+              Gas station data comes directly from your maps app for the most accurate prices and real-time availability. Bite focuses on restaurants — but we've got you covered when you need to fuel up too.
+            </p>
+          </div>
+        </div>
+      `;
+    } catch (err) {
+      v.innerHTML = `
+        ${this.subHeader('Gas Stations', 'settings')}
+        <div class="view" style="padding:var(--s4);">
+          <div class="empty">
+            <div class="empty-icon">⛽</div>
+            <p>${err.message || 'Could not load gas stations.'}</p>
+          </div>
+        </div>
+      `;
+    }
   },
 };
 
