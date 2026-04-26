@@ -13,7 +13,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Serif+Display&display=swap" rel="stylesheet" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' https://*.googleapis.com https://*.gstatic.com data: blob:; connect-src 'self' https://bite-worker.schuette-markus.workers.dev https://maps.google.com https://maps.apple.com;" />
 <style>
 :root {
   /* Deep blue palette */
@@ -261,13 +260,10 @@ a { color: inherit; text-decoration: none; }
 
 /* ── Home hero with animated bg ──────────────────────── */
 .home-hero {
-  padding: var(--s4);
+  padding: var(--s3) var(--s4) var(--s5);
   display: flex;
   flex-direction: column;
   gap: var(--s3);
-  min-height: calc(100dvh - var(--header-h) - var(--tab-h) - 16px);
-  justify-content: center;
-  background: var(--surface);
 }
 
 /* ── Home banners — DoorDash-sleek ────────────────────── */
@@ -2035,6 +2031,46 @@ const App = {
 
   el() { return document.getElementById('view'); },
 
+  homeHeadline(loc) {
+    const city = esc(loc?.city || loc?.neighborhood || 'your area');
+    const ctx = getContext();
+    const greetings = [
+      "Let's find you something to eat in " + city,
+      "Hungry in " + city + "? We got you",
+      "What sounds good in " + city + "?",
+      "Good eats are calling in " + city,
+      "Time to eat. Let's do " + city + " right",
+      city + " has great food. Let's find it",
+      "Let's get you fed in " + city,
+    ];
+    const mealTwists = {
+      breakfast: [
+        "Rise and dine in " + city,
+        "Breakfast is calling in " + city,
+        "Morning fuel in " + city + "? Let's go",
+      ],
+      lunch: [
+        "Lunch break in " + city + "? Say less",
+        "Midday hunger in " + city + "? Solved",
+        "Let's do lunch in " + city,
+      ],
+      dinner: [
+        "Dinner plans in " + city + "? We got options",
+        "Evening eats in " + city + ". Let's go",
+        "What's for dinner in " + city + "?",
+      ],
+      latenight: [
+        "Late night cravings in " + city + "?",
+        "Still up in " + city + "? Let's eat",
+        "Night owl eats in " + city,
+      ],
+    };
+    const pool = mealTwists[ctx.meal] || greetings;
+    // Use hour as seed for consistency within the same session
+    const idx = (ctx.hour + new Date().getDate()) % pool.length;
+    return pool[idx];
+  },
+
   header(loc) {
     let locLabel = 'Set location';
     if (loc?.neighborhood && loc?.city) locLabel = loc.city + ' · ' + (loc.zip || loc.region || '');
@@ -2183,7 +2219,22 @@ const App = {
     v.innerHTML = `
       ${this.header(loc)}
       <div class="view">
-        <div class="home-hero">
+        <div style="padding:var(--s5) var(--s4) var(--s3);">
+          <h1 style="font-size:22px;font-weight:800;letter-spacing:-0.03em;color:var(--ink);line-height:1.3;margin-bottom:4px;">${this.homeHeadline(loc)}</h1>
+        </div>
+
+        <div class="search-bar">
+          ${Icons.search}
+          <input type="text" placeholder="Search restaurants..." id="searchInput" />
+        </div>
+
+        <div class="cat-scroll" id="catChips">
+          ${[['All','🍽'],['Italian','🍝'],['Japanese','🍱'],['Mexican','🌮'],['American','🍔'],['Thai','🍜'],['Indian','🍛'],['Chinese','🥟'],['Cafe','☕']].map(function(c, i) {
+            return '<button class="cat-chip ' + (i === 0 ? 'active' : '') + '" data-cat="' + c[0].toLowerCase() + '"><span class="emoji">' + c[1] + '</span>' + c[0] + '</button>';
+          }).join('')}
+        </div>
+
+        <div class="home-hero" style="min-height:auto;">
           <button class="decide-banner" id="decideBtn">
             <div class="banner-icon">${Icons.go}</div>
             <div class="banner-text">
@@ -2214,12 +2265,32 @@ const App = {
       ]);
     };
 
-    // Wire decide — personalized pick
+    // Wire category chips
+    this.state.activeCat = 'all';
+    document.querySelectorAll('[data-cat]').forEach(el => {
+      el.onclick = () => {
+        document.querySelectorAll('[data-cat]').forEach(c => c.classList.remove('active'));
+        el.classList.add('active');
+        Haptics.light();
+        this.state.activeCat = el.dataset.cat;
+      };
+    });
+
+    // Wire search
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+      searchInput.oninput = (e) => {
+        this.state.searchQuery = e.target.value.toLowerCase();
+      };
+    }
+
+    // Wire decide — personalized pick (respects category + search)
     document.getElementById('decideBtn').onclick = async () => {
       Haptics.medium();
       try {
-        const restaurants = await Pool.fetch(loc);
-        if (restaurants.length === 0) { toast('No 4-star spots nearby.'); return; }
+        const all = await Pool.fetch(loc);
+        const restaurants = this._filteredByCat(all);
+        if (restaurants.length === 0) { toast('No restaurants found. Try another category.'); return; }
         const pick = recommend('familiar', restaurants, dna);
         if (!pick) { toast('No matches. Try adjusting your profile.'); return; }
         this.state.activeMatch = pick;
