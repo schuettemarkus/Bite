@@ -12,6 +12,7 @@
 <link rel="manifest" href="manifest.json" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Serif+Display&display=swap" as="style" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Serif+Display&display=swap" rel="stylesheet" />
 <style>
 :root {
@@ -264,6 +265,23 @@ a { color: inherit; text-decoration: none; }
   display: flex;
   flex-direction: column;
   gap: var(--s3);
+  position: relative;
+}
+.home-hero::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 80%, rgba(26, 58, 92, 0.035), transparent),
+    radial-gradient(ellipse 60% 50% at 80% 20%, rgba(232, 146, 47, 0.03), transparent);
+  background-size: 200% 200%;
+  animation: heroBg 15s ease-in-out infinite alternate;
+  pointer-events: none;
+  z-index: -1;
+}
+@keyframes heroBg {
+  0%   { background-position: 0% 0%; }
+  100% { background-position: 100% 100%; }
 }
 
 /* ── Home banners — DoorDash-sleek ────────────────────── */
@@ -324,52 +342,6 @@ a { color: inherit; text-decoration: none; }
 .browse-banner .banner-text p { color: var(--ink-muted); opacity: 1; }
 .browse-banner .banner-text .act-arrow svg { stroke: var(--ink-soft); }
 
-/* ── Action cards row ─────────────────────────────────── */
-.action-row-home {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--s3);
-  margin: 0 var(--s4) var(--s4);
-}
-.action-card {
-  padding: var(--s5) var(--s4);
-  border-radius: var(--r-lg);
-  display: flex;
-  align-items: center;
-  gap: var(--s3);
-  cursor: pointer;
-  transition: transform var(--d-fast), box-shadow var(--d-fast);
-  box-shadow: var(--shadow-sm);
-}
-.action-card:active { transform: scale(0.97); }
-.action-card .ac-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: var(--r-md);
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-}
-.action-card .ac-icon svg { width: 20px; height: 20px; stroke-width: 2; fill: none; }
-.action-card .ac-text { min-width: 0; }
-.action-card .ac-label { font-size: 14px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.2; }
-.action-card .ac-sub { font-size: 11px; opacity: 0.6; line-height: 1.3; margin-top: 2px; }
-
-.action-card.recommend {
-  background: linear-gradient(135deg, #FFF7ED, #FFF3E0);
-  border: 1px solid rgba(232, 146, 47, 0.15);
-}
-.action-card.recommend .ac-icon { background: var(--accent); border-radius: var(--r-md); }
-.action-card.recommend .ac-icon svg { stroke: white; }
-.action-card.recommend .ac-label { color: var(--accent-dark); }
-
-.action-card.browse {
-  background: linear-gradient(135deg, #EDF0F5, #E2E6ED);
-  border: 1px solid rgba(26, 58, 92, 0.1);
-}
-.action-card.browse .ac-icon { background: var(--primary); border-radius: var(--r-md); }
-.action-card.browse .ac-icon svg { stroke: white; }
-.action-card.browse .ac-label { color: var(--primary); }
 
 /* ── Restaurant feed ─────────────────────────────────── */
 .feed { padding: 0 var(--s4) var(--s4); display: flex; flex-direction: column; gap: var(--s3); }
@@ -456,7 +428,6 @@ a.r-card-rating:hover { background: var(--border); }
   0%, 100% { box-shadow: 0 0 0 0 rgba(46, 158, 90, 0.4); }
   50% { box-shadow: 0 0 0 4px rgba(46, 158, 90, 0); }
 }
-.r-card-indicators { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
 .indicator {
   display: inline-flex;
   align-items: center;
@@ -1221,9 +1192,9 @@ a.r-card-rating:hover { background: var(--border); }
       <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.5 5.5 6 .7-4.5 4 1.2 6.3L12 16.8l-5.2 2.7 1.2-6.3-4.5-4 6-.7z"/></svg>
       <span>Pick</span>
     </button>
-    <button class="tab" data-tab="swipe">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 11H5"/><path d="M13 5l7 7-7 7"/></svg>
-      <span>Browse</span>
+    <button class="tab" data-tab="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+      <span>Search</span>
     </button>
     <button class="tab" data-tab="saved">
       <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 4a1 1 0 011-1h12a1 1 0 011 1v17l-7-4-7 4V4z"/></svg>
@@ -2115,6 +2086,7 @@ const App = {
     switch (path) {
       case 'home':    this.updateTabs('home'); return this.renderHome(v);
       case 'pick':    this.updateTabs('pick'); return this.renderPick(v);
+      case 'search':  this.updateTabs('search'); return this.renderSearch(v);
       case 'swipe':   this.updateTabs('swipe'); return this.renderSwipe(v);
       case 'match':   this.updateTabs('home'); return this.renderMatch(v, params[0]);
       case 'dna':     this.updateTabs('dna'); return this.renderDNA(v);
@@ -2220,18 +2192,7 @@ const App = {
       ${this.header(loc)}
       <div class="view">
         <div style="padding:var(--s5) var(--s4) var(--s3);">
-          <h1 style="font-size:22px;font-weight:800;letter-spacing:-0.03em;color:var(--ink);line-height:1.3;margin-bottom:4px;">${this.homeHeadline(loc)}</h1>
-        </div>
-
-        <div class="search-bar">
-          ${Icons.search}
-          <input type="text" placeholder="Search restaurants..." id="searchInput" />
-        </div>
-
-        <div class="cat-scroll" id="catChips">
-          ${[['All','🍽'],['Italian','🍝'],['Japanese','🍱'],['Mexican','🌮'],['American','🍔'],['Thai','🍜'],['Indian','🍛'],['Chinese','🥟'],['Cafe','☕']].map(function(c, i) {
-            return '<button class="cat-chip ' + (i === 0 ? 'active' : '') + '" data-cat="' + c[0].toLowerCase() + '"><span class="emoji">' + c[1] + '</span>' + c[0] + '</button>';
-          }).join('')}
+          <h1 style="font-size:22px;font-weight:800;letter-spacing:-0.03em;color:var(--ink);line-height:1.3;">${this.homeHeadline(loc)}</h1>
         </div>
 
         <div class="home-hero" style="min-height:auto;">
@@ -2252,6 +2213,12 @@ const App = {
             </div>
             <span class="act-arrow">${Icons.chevron}</span>
           </button>
+        </div>
+
+        <div class="cat-scroll" id="catChips">
+          ${[['All','🍽'],['Italian','🍝'],['Japanese','🍱'],['Mexican','🌮'],['American','🍔'],['Thai','🍜'],['Indian','🍛'],['Chinese','🥟'],['Cafe','☕']].map(function(c, i) {
+            return '<button class="cat-chip ' + (i === 0 ? 'active' : '') + '" data-cat="' + c[0].toLowerCase() + '"><span class="emoji">' + c[1] + '</span>' + c[0] + '</button>';
+          }).join('')}
         </div>
       </div>
     `;
@@ -2275,14 +2242,6 @@ const App = {
         this.state.activeCat = el.dataset.cat;
       };
     });
-
-    // Wire search
-    const searchInput = document.getElementById('searchInput');
-    if (searchInput) {
-      searchInput.oninput = (e) => {
-        this.state.searchQuery = e.target.value.toLowerCase();
-      };
-    }
 
     // Wire decide — personalized pick (respects category + search)
     document.getElementById('decideBtn').onclick = async () => {
@@ -2387,8 +2346,8 @@ const App = {
     this.renderFeed(filtered);
   },
 
-  renderFeed(restaurants) {
-    const feed = document.getElementById('feed');
+  renderFeed(restaurants, feedEl) {
+    const feed = feedEl || document.getElementById('feed');
     if (!feed) return;
     if (restaurants.length === 0) {
       feed.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><p>No restaurants found.</p></div>`;
@@ -2525,6 +2484,49 @@ const App = {
 
   // ─── Swipe ───────────────────────────────────────────────────────
   // ─── Pick — instant personalized recommendation ──────────────────
+  // ─── Search ──────────────────────────────────────────────────────
+  async renderSearch(v) {
+    const loc = Location.load();
+    if (!loc) return Router.go('home');
+
+    v.innerHTML = `
+      ${this.subHeader('Search', 'home')}
+      <div class="view" style="padding-top:var(--s3);">
+        <div class="search-bar">
+          ${Icons.search}
+          <input type="text" placeholder="Search restaurants..." id="searchInput" autofocus />
+        </div>
+        <div class="feed" id="searchFeed" style="padding:0 var(--s4);"></div>
+      </div>
+    `;
+
+    let allRestaurants = [];
+    try {
+      allRestaurants = await Pool.fetch(loc);
+    } catch { }
+
+    const searchInput = document.getElementById('searchInput');
+    const feed = document.getElementById('searchFeed');
+
+    const doSearch = () => {
+      const q = (searchInput.value || '').toLowerCase().trim();
+      if (!q) { feed.innerHTML = '<div style="text-align:center;padding:var(--s8);color:var(--ink-soft);font-size:14px;">Type to search nearby restaurants</div>'; return; }
+      const results = allRestaurants.filter(r =>
+        !r.isGasStation &&
+        ((r.name || '').toLowerCase().includes(q) ||
+         (r.cuisine || '').toLowerCase().includes(q) ||
+         (r.tags || []).some(t => t.toLowerCase().includes(q)))
+      );
+      if (results.length === 0) { feed.innerHTML = '<div style="text-align:center;padding:var(--s8);color:var(--ink-soft);font-size:14px;">No results for "' + esc(q) + '"</div>'; return; }
+      this.state._allRestaurants = allRestaurants;
+      this.state.expandedCard = null;
+      this.renderFeed(results, feed);
+    };
+
+    searchInput.oninput = doSearch;
+    doSearch();
+  },
+
   async renderPick(v) {
     const loc = Location.load();
     const dna = DNA.load();
