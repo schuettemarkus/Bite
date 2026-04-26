@@ -228,12 +228,10 @@ a { color: inherit; text-decoration: none; }
 /* ── Category chips ─────────────────────────────────── */
 .cat-scroll {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--s2);
-  overflow-x: auto;
   padding: 0 var(--s4) var(--s4);
-  scrollbar-width: none;
 }
-.cat-scroll::-webkit-scrollbar { display: none; }
 .cat-chip {
   flex-shrink: 0;
   height: 36px;
@@ -798,11 +796,17 @@ a.r-card-rating:hover { background: var(--border); }
 .dismiss-link {
   display: block;
   text-align: center;
-  padding: var(--s5);
-  color: var(--ink-soft);
-  font-size: 14px;
+  margin: var(--s4) var(--s4) var(--s5);
+  padding: var(--s3) var(--s4);
+  color: var(--ink-muted);
+  font-size: 13px;
   font-weight: 500;
+  background: var(--bg-2);
+  border-radius: var(--r-md);
+  border: 1px solid var(--border-light);
+  transition: background var(--d-fast);
 }
+.dismiss-link:active { background: var(--border); }
 
 /* ── Taste DNA ───────────────────────────────────────── */
 .dna-header { text-align: center; padding: var(--s6) 0 var(--s5); }
@@ -2225,14 +2229,34 @@ const App = {
       ]);
     };
 
-    // Wire category chips
-    this.state.activeCat = 'all';
+    // Wire category chips — multi-select, "All" resets
+    this.state.activeCats = new Set(['all']);
     document.querySelectorAll('[data-cat]').forEach(el => {
       el.onclick = () => {
-        document.querySelectorAll('[data-cat]').forEach(c => c.classList.remove('active'));
-        el.classList.add('active');
         Haptics.light();
-        this.state.activeCat = el.dataset.cat;
+        const cat = el.dataset.cat;
+        if (cat === 'all') {
+          this.state.activeCats = new Set(['all']);
+          document.querySelectorAll('[data-cat]').forEach(c => c.classList.remove('active'));
+          el.classList.add('active');
+        } else {
+          // Deselect "All" when picking specific
+          document.querySelector('[data-cat="all"]')?.classList.remove('active');
+          this.state.activeCats.delete('all');
+          // Toggle this chip
+          if (this.state.activeCats.has(cat)) {
+            this.state.activeCats.delete(cat);
+            el.classList.remove('active');
+          } else {
+            this.state.activeCats.add(cat);
+            el.classList.add('active');
+          }
+          // If nothing selected, revert to All
+          if (this.state.activeCats.size === 0) {
+            this.state.activeCats = new Set(['all']);
+            document.querySelector('[data-cat="all"]')?.classList.add('active');
+          }
+        }
       };
     });
 
@@ -2264,13 +2288,17 @@ const App = {
 
   // Filter restaurants by active category
   _filteredByCat(restaurants) {
-    const cat = this.state.activeCat || 'all';
+    const cats = this.state.activeCats || new Set(['all']);
     let filtered = (restaurants || []).filter(r => !r.isGasStation);
-    if (cat && cat !== 'all') {
-      filtered = filtered.filter(r =>
-        (r.cuisineCategory || '').toLowerCase().includes(cat) ||
-        (r.cuisine || '').toLowerCase().includes(cat)
-      );
+    if (!cats.has('all') && cats.size > 0) {
+      filtered = filtered.filter(r => {
+        const rc = (r.cuisineCategory || '').toLowerCase();
+        const rn = (r.cuisine || '').toLowerCase();
+        for (const cat of cats) {
+          if (rc.includes(cat) || rn.includes(cat)) return true;
+        }
+        return false;
+      });
     }
     if (this.state.searchQuery) {
       filtered = filtered.filter(r =>
@@ -2397,16 +2425,7 @@ const App = {
         } else {
           this.state.expandedCard = id;
         }
-        this.renderFeed(this.state._allRestaurants?.filter(r => {
-          const cat = document.querySelector('[data-cat].active')?.dataset.cat || 'all';
-          if (cat && cat !== 'all') {
-            if (!(r.cuisineCategory || '').toLowerCase().includes(cat) && !(r.cuisine || '').toLowerCase().includes(cat)) return false;
-          }
-          if (this.state.searchQuery) {
-            if (!(r.name || '').toLowerCase().includes(this.state.searchQuery) && !(r.cuisine || '').toLowerCase().includes(this.state.searchQuery)) return false;
-          }
-          return true;
-        }) || []);
+        this.renderFeed(this._filteredByCat(this.state._allRestaurants || []));
       };
     });
   },
@@ -2478,18 +2497,36 @@ const App = {
   // ─── Swipe ───────────────────────────────────────────────────────
   // ─── Pick — instant personalized recommendation ──────────────────
   // ─── Search ──────────────────────────────────────────────────────
+  searchHeadline(loc) {
+    const city = esc(loc?.city || loc?.neighborhood || 'town');
+    const lines = [
+      "What's cooking in " + city + "?",
+      "The " + city + " food scene, curated",
+      "Every great meal starts with a search",
+      "Explore what " + city + " has to offer",
+      city + "'s best — all in one place",
+    ];
+    return lines[(new Date().getHours() + new Date().getDate()) % lines.length];
+  },
+
   async renderSearch(v) {
     const loc = Location.load();
     if (!loc) return Router.go('home');
 
     v.innerHTML = `
-      ${this.subHeader('Search', 'home')}
-      <div class="view" style="padding-top:var(--s3);">
+      ${this.subHeader('', 'home')}
+      <div class="view">
+        <div style="padding:var(--s4) var(--s4) var(--s2);">
+          <h2 style="font-size:18px;font-weight:700;letter-spacing:-0.02em;margin-bottom:var(--s3);">${this.searchHeadline(loc)}</h2>
+        </div>
         <div class="search-bar">
           ${Icons.search}
-          <input type="text" placeholder="Search restaurants..." id="searchInput" autofocus />
+          <input type="text" placeholder="Search by name, cuisine, or vibe..." id="searchInput" autofocus />
         </div>
-        <div class="feed" id="searchFeed" style="padding:0 var(--s4);"></div>
+        <div style="padding:0 var(--s4) var(--s2);">
+          <div id="searchLabel" style="font-size:12px;font-weight:600;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.05em;">Near you</div>
+        </div>
+        <div class="feed" id="searchFeed" style="padding:0 var(--s4) var(--s5);"></div>
       </div>
     `;
 
@@ -2500,18 +2537,25 @@ const App = {
 
     const searchInput = document.getElementById('searchInput');
     const feed = document.getElementById('searchFeed');
+    const label = document.getElementById('searchLabel');
+    const filtered = allRestaurants.filter(function(r) { return !r.isGasStation; });
+
+    this.state._allRestaurants = allRestaurants;
 
     const doSearch = () => {
       const q = (searchInput.value || '').toLowerCase().trim();
-      if (!q) { feed.innerHTML = '<div style="text-align:center;padding:var(--s8);color:var(--ink-soft);font-size:14px;">Type to search nearby restaurants</div>'; return; }
-      const results = allRestaurants.filter(r =>
-        !r.isGasStation &&
-        ((r.name || '').toLowerCase().includes(q) ||
-         (r.cuisine || '').toLowerCase().includes(q) ||
-         (r.tags || []).some(t => t.toLowerCase().includes(q)))
+      if (!q) {
+        label.textContent = 'Near you';
+        this.state.expandedCard = null;
+        this.renderFeed(filtered, feed);
+        return;
+      }
+      const results = filtered.filter(r =>
+        (r.name || '').toLowerCase().includes(q) ||
+        (r.cuisine || '').toLowerCase().includes(q) ||
+        (r.tags || []).some(t => t.toLowerCase().includes(q))
       );
-      if (results.length === 0) { feed.innerHTML = '<div style="text-align:center;padding:var(--s8);color:var(--ink-soft);font-size:14px;">No results for "' + esc(q) + '"</div>'; return; }
-      this.state._allRestaurants = allRestaurants;
+      label.textContent = results.length + ' result' + (results.length !== 1 ? 's' : '') + ' for "' + q + '"';
       this.state.expandedCard = null;
       this.renderFeed(results, feed);
     };
@@ -2860,7 +2904,7 @@ const App = {
                 return '<span style="flex:1;text-align:center;">' + l + '</span>';
               }).join('');
 
-              return '<div style="margin-top:var(--s4);background:var(--bg-2);border-radius:var(--r-md);padding:var(--s3) var(--s4);">'
+              return '<div style="margin-top:var(--s6);margin-bottom:var(--s4);background:var(--bg-2);border-radius:var(--r-md);padding:var(--s4) var(--s4);">'
                 + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--s2);">'
                 + '<span style="font-size:12px;font-weight:700;color:var(--ink);">Popular times</span>'
                 + '<span style="font-size:11px;color:var(--ink-muted);">' + dayName + 's</span>'

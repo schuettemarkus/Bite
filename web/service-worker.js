@@ -1,7 +1,7 @@
 // Bite service worker — network-first for HTML, cache-first for static assets.
 // Bump CACHE_VERSION on every deploy to bust old caches.
 
-const CACHE_VERSION = 'bite-20260426130514';
+const CACHE_VERSION = 'bite-20260426131706';
 const SHELL = ['/', '/index.html', '/manifest.json'];
 
 self.addEventListener('install', (e) => {
