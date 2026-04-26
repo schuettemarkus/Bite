@@ -1,10 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <rect width="512" height="512" rx="96" fill="#1A3A5C"/>
-  <g transform="translate(106, 128)" stroke="#FFFFFF" fill="none">
-    <path d="M20 100C20 48 64 16 150 16" stroke-width="14" stroke-linecap="round"/>
-    <path d="M20 156C20 208 64 240 150 240" stroke-width="14" stroke-linecap="round"/>
-    <path d="M150 16l96 84" stroke-width="12" stroke-linecap="round"/>
-    <path d="M150 240l96-84" stroke-width="12" stroke-linecap="round"/>
-    <circle cx="74" cy="96" r="10" fill="#FFFFFF"/>
+  <g transform="translate(64, 96)" stroke="#FFFFFF" fill="none">
+    <!-- Upper jaw -->
+    <path d="M32 136C32 72 84 26 192 26s160 46 160 110" stroke-width="14" stroke-linecap="round"/>
+    <!-- Upper teeth -->
+    <path d="M80 136v40" stroke-width="13" stroke-linecap="round"/>
+    <path d="M128 136v52" stroke-width="14" stroke-linecap="round"/>
+    <path d="M176 136v56" stroke-width="15" stroke-linecap="round"/>
+    <path d="M224 136v52" stroke-width="14" stroke-linecap="round"/>
+    <path d="M272 136v40" stroke-width="13" stroke-linecap="round"/>
+    <!-- Lower jaw -->
+    <path d="M32 180C32 244 84 290 192 290s160-46 160-110" stroke-width="14" stroke-linecap="round"/>
+    <!-- Lower teeth -->
+    <path d="M104 180v-34" stroke-width="13" stroke-linecap="round"/>
+    <path d="M152 180v-44" stroke-width="14" stroke-linecap="round"/>
+    <path d="M200 180v-44" stroke-width="14" stroke-linecap="round"/>
+    <path d="M248 180v-34" stroke-width="13" stroke-linecap="round"/>
+    <!-- Eyes -->
+    <circle cx="118" cy="84" r="16" fill="#FFFFFF"/>
+    <circle cx="266" cy="84" r="16" fill="#FFFFFF"/>
   </g>
 </svg>
