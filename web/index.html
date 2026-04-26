@@ -106,7 +106,12 @@ a { color: inherit; text-decoration: none; }
   display: flex;
   flex-direction: column;
   position: relative;
-  background: var(--bg);
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 80%, rgba(26, 58, 92, 0.035), transparent),
+    radial-gradient(ellipse 60% 50% at 80% 20%, rgba(232, 146, 47, 0.03), transparent),
+    var(--bg);
+  background-size: 200% 200%, 200% 200%, auto;
+  animation: heroBg 15s ease-in-out infinite alternate;
 }
 #view {
   flex: 1;
@@ -265,19 +270,6 @@ a { color: inherit; text-decoration: none; }
   display: flex;
   flex-direction: column;
   gap: var(--s3);
-  position: relative;
-}
-.home-hero::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background:
-    radial-gradient(ellipse 80% 60% at 20% 80%, rgba(26, 58, 92, 0.035), transparent),
-    radial-gradient(ellipse 60% 50% at 80% 20%, rgba(232, 146, 47, 0.03), transparent);
-  background-size: 200% 200%;
-  animation: heroBg 15s ease-in-out infinite alternate;
-  pointer-events: none;
-  z-index: -1;
 }
 @keyframes heroBg {
   0%   { background-position: 0% 0%; }
