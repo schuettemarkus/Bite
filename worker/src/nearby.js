@@ -15,6 +15,8 @@ const FIELD_MASK = [
   'places.types',
   'places.primaryType',
   'places.currentOpeningHours.openNow',
+  'places.currentOpeningHours.weekdayDescriptions',
+  'places.currentOpeningHours.periods',
   'places.formattedAddress',
   'places.nationalPhoneNumber',
   'places.websiteUri',

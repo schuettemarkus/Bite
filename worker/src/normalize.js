@@ -138,6 +138,42 @@ export function normalizePlace(googlePlace, userLat, userLng) {
   const types = googlePlace.types || [];
   const isGasStation = types.some(t => GAS_STATION_TYPES.has(t));
 
+  // Extract today's hours from weekdayDescriptions or periods
+  const hours = googlePlace.currentOpeningHours || {};
+  let todayHours = null;
+  let closingTime = null;
+
+  if (hours.weekdayDescriptions?.length) {
+    // weekdayDescriptions is an array indexed 0=Sunday (or 0=Monday depending on locale)
+    // Google returns them as ["Monday: 9:00 AM – 9:00 PM", ...] — 7 entries, Monday-first
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon, ...
+    // Google's weekdayDescriptions: 0=Mon, 1=Tue, ..., 6=Sun
+    const googleIdx = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const todayStr = hours.weekdayDescriptions[googleIdx];
+    if (todayStr) {
+      // e.g. "Monday: 9:00 AM – 9:00 PM" or "Monday: Closed"
+      const colonIdx = todayStr.indexOf(':');
+      todayHours = colonIdx >= 0 ? todayStr.slice(colonIdx + 1).trim() : todayStr;
+    }
+  }
+
+  if (hours.periods?.length) {
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0=Sun
+    // Find today's period to get closing time
+    for (const period of hours.periods) {
+      if (period.close?.day === dayOfWeek || period.open?.day === dayOfWeek) {
+        if (period.close?.hour != null) {
+          const h = period.close.hour;
+          const m = period.close.minute || 0;
+          closingTime = `${h > 12 ? h - 12 : h || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
+        }
+        break;
+      }
+    }
+  }
+
   return {
     id: googlePlace.id,
     name,
@@ -154,7 +190,9 @@ export function normalizePlace(googlePlace, userLat, userLng) {
     indicators: deriveIndicators(types),
     isGasStation,
     address: googlePlace.formattedAddress,
-    openNow: googlePlace.currentOpeningHours?.openNow ?? null,
+    openNow: hours.openNow ?? null,
+    todayHours,
+    closingTime,
     pickup: googlePlace.takeout ?? false,
     delivery: googlePlace.delivery ?? false,
     dineIn: googlePlace.dineIn ?? null,

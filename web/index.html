@@ -381,6 +381,19 @@ a { color: inherit; text-decoration: none; }
 .indicator.vegetarian { background: #D1FAE5; color: #059669; }
 .indicator.fine { background: #FEF3C7; color: #B45309; }
 .indicator.quick { background: var(--bg-2); color: var(--ink-muted); }
+.diet-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: var(--r-full);
+  font-size: 11px;
+  font-weight: 700;
+  background: #D1FAE5;
+  color: #047857;
+  letter-spacing: 0.01em;
+}
+.diet-badge svg { width: 12px; height: 12px; stroke: #047857; fill: none; stroke-width: 2.5; }
 
 /* ── Expanded restaurant detail ──────────────────────── */
 .r-detail {
@@ -1409,6 +1422,70 @@ function getMapsUrl(r) {
   return r.mapsUrl || `https://maps.google.com/?q=${r.lat},${r.lng}`;
 }
 
+// Diet preference badge — shows on every card when user has diet prefs set
+function dietBadgeHtml(r) {
+  const dna = DNA.load();
+  if (!dna.diet || dna.diet.length === 0) return '';
+
+  const labels = {
+    vegetarian: 'Vegetarian', vegan: 'Vegan', glutenfree: 'Gluten-free',
+    halal: 'Halal', kosher: 'Kosher', pescatarian: 'Pescatarian', dairyfree: 'Dairy-free'
+  };
+
+  // Check if restaurant matches any of the user's diet indicators
+  const rIndicators = (r.indicators || []).map(i => i.toLowerCase().replace(/[^a-z]/g, ''));
+  const rTags = (r.tags || []).map(t => t.toLowerCase().replace(/[^a-z]/g, ''));
+  const rCuisine = (r.cuisine || '').toLowerCase();
+  const allSignals = [...rIndicators, ...rTags, rCuisine];
+
+  // Build matched and honored labels
+  const honored = [];
+  for (const pref of dna.diet) {
+    // Direct match from indicators/tags
+    if (allSignals.some(s => s.includes(pref))) {
+      honored.push(labels[pref] || pref);
+    }
+  }
+
+  // Always show the badge with the user's preferences to reassure them
+  const prefLabels = dna.diet.map(p => labels[p] || p);
+  const checkSvg = '<svg viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7"/></svg>';
+
+  if (honored.length > 0) {
+    return `<span class="diet-badge">${checkSvg} ${honored.join(', ')} friendly</span>`;
+  }
+  // Show a softer "your prefs active" badge even when we can't confirm from data
+  return `<span class="diet-badge" style="background:#EDF0F5;color:var(--ink-muted);">${checkSvg} ${prefLabels.join(', ')} filter active</span>`;
+}
+
+// Open/closed status with hours context
+function openStatusHtml(r) {
+  if (r.openNow === true) {
+    let text = 'Open now';
+    if (r.closingTime) text += ` · Closes ${r.closingTime}`;
+    else if (r.todayHours && r.todayHours.toLowerCase() !== 'closed') text += ` · ${r.todayHours}`;
+    return `<div class="r-card-status open" style="margin:0;"><span class="status-dot"></span> ${text}</div>`;
+  }
+  if (r.openNow === false) {
+    let reason = 'Closed';
+    if (r.todayHours) {
+      const lower = r.todayHours.toLowerCase();
+      if (lower === 'closed') {
+        // Figure out why — is it the day?
+        const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+        reason = `Closed ${days[new Date().getDay()]}s`;
+      } else {
+        // Has hours but is currently closed — past closing time or before opening
+        const ctx = getContext();
+        if (ctx.hour < 10) reason = `Closed · Opens ${r.todayHours.split('–')[0]?.trim() || 'later'}`;
+        else reason = `Closed · Past closing time`;
+      }
+    }
+    return `<div class="r-card-status closed" style="margin:0;"><span class="status-dot"></span> ${reason}</div>`;
+  }
+  return '';
+}
+
 // Estimate wait time based on time of day, day of week, rating popularity
 function estimateWaitTime(r) {
   const ctx = getContext();
@@ -1575,10 +1652,13 @@ const App = {
   },
 
   subHeader(title, backTo) {
+    const titleHtml = title
+      ? `<span style="font-size:17px;font-weight:700;flex:1;text-align:center;margin-right:36px;">${title}</span>`
+      : `<div style="flex:1;display:flex;align-items:center;justify-content:center;margin-right:36px;"><div class="header-logo"><span style="color:var(--primary);">${LogoSVG}</span><span>bite<span style="color:var(--accent);">.</span></span></div></div>`;
     return `
       <div class="header">
         <button style="width:36px;height:36px;display:grid;place-items:center;border-radius:50%;background:var(--bg-2);" onclick="Router.go('${backTo || 'home'}')">${Icons.back}</button>
-        <span style="font-size:17px;font-weight:700;flex:1;text-align:center;margin-right:36px;">${title}</span>
+        ${titleHtml}
       </div>
     `;
   },
@@ -1841,11 +1921,10 @@ const App = {
               <span class="dot"></span>
               <span>${r.distance != null ? r.distance + ' mi' : 'Nearby'}</span>
             </div>
+            ${dietBadgeHtml(r)}
             ${r.tags?.length ? `<div class="r-card-tags">${r.tags.slice(0,3).map(t => `<span class="r-card-tag">${t}</span>`).join('')}</div>` : ''}
             <div style="display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap;">
-              <div class="r-card-status ${r.openNow ? 'open' : r.openNow === false ? 'closed' : ''}" style="margin:0;">
-                ${r.openNow === true ? '<span class="status-dot"></span> Open now' : r.openNow === false ? '<span class="status-dot"></span> Closed' : ''}
-              </div>
+              ${openStatusHtml(r)}
               ${(r.indicators || []).map(ind => {
                 const map = {
                   'serves-alcohol': { cls: 'alcohol', icon: '🍷', label: 'Alcohol' },
@@ -2024,6 +2103,7 @@ const App = {
             <span>${r.cuisine}</span><span class="dot"></span><span>${'$'.repeat(Math.max(1, r.priceLevel))}</span><span class="dot"></span><span>${r.distance != null ? r.distance + ' mi' : 'nearby'}</span>
           </div>
           <div class="card-rating">${r.rating?.toFixed(1) || '—'} stars · ${r.reviewCount?.toLocaleString() || '0'} reviews</div>
+          ${dietBadgeHtml(r)}
           ${r.tags?.length ? `<div class="card-tags">${r.tags.slice(0,3).map(t => `<span class="card-tag">${t}</span>`).join('')}</div>` : ''}
         </div>
       </div>
@@ -2183,6 +2263,7 @@ const App = {
               </button>
             </div>
             <div class="match-meta">${r.cuisine} · ${'$'.repeat(Math.max(1, r.priceLevel))} · ${r.distance != null ? r.distance + ' mi away' : 'nearby'} · ${r.rating?.toFixed(1) || '—'} stars</div>
+            ${dietBadgeHtml(r)}
 
             <div class="r-detail-ai" style="margin:var(--s4) 0;">
               <div class="ai-badge">${Icons.sparkle} Highlights</div>
