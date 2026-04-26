@@ -1959,7 +1959,7 @@ const App = {
         <div class="cat-scroll" id="catChips">
           ${['All', 'Italian', 'Japanese', 'Mexican', 'American', 'Thai', 'Indian', 'Chinese', 'Cafe'].map((c, i) => {
             const emojis = ['🍽', '🍝', '🍱', '🌮', '🍔', '🍜', '🍛', '🥟', '☕'];
-            return `<button class="cat-chip ${i === 0 ? 'active' : ''}" data-cat="${c.toLowerCase()}"><span class="emoji">${emojis[i]}</span>${c}</button>`;
+            return '<button class="cat-chip ' + (i === 0 ? 'active' : '') + '" data-cat="' + c.toLowerCase() + '"><span class="emoji">' + emojis[i] + '</span>' + c + '</button>';
           }).join('')}
         </div>
 
@@ -1967,7 +1967,7 @@ const App = {
           <div class="banner-icon">${Icons.go}</div>
           <div class="banner-text">
             <h3>Decide for me</h3>
-            <p>One tap. The perfect restaurant, right now.</p>
+            <p>Personalized pick, right now.</p>
           </div>
         </button>
 
@@ -1975,7 +1975,7 @@ const App = {
           <button class="action-card recommend" id="topPickBtn">
             <div class="ac-icon">${Icons.sparkle}</div>
             <div class="ac-text">
-              <div class="ac-label">Our Best Match</div>
+              <div class="ac-label">Decide for me</div>
               <div class="ac-sub">Personalized pick</div>
             </div>
           </button>
@@ -1986,17 +1986,6 @@ const App = {
               <div class="ac-sub">Swipe to discover</div>
             </div>
           </button>
-        </div>
-
-        <div id="topPick"></div>
-
-        <div class="section-hdr">
-          <h2>Near you</h2>
-        </div>
-
-        <div class="feed" id="feed">
-          <div class="skel" style="height:220px;"></div>
-          <div class="skel" style="height:220px;"></div>
         </div>
       </div>
     `;
@@ -2014,8 +2003,9 @@ const App = {
     document.getElementById('decideBtn').onclick = async () => {
       Haptics.medium();
       try {
-        const restaurants = this._filteredByCat(await Pool.fetch(loc));
-        if (restaurants.length === 0) { toast('No restaurants in this category.'); return; }
+        const all = await Pool.fetch(loc);
+        const restaurants = this._filteredByCat(all);
+        if (restaurants.length === 0) { toast('No restaurants found. Try another category.'); return; }
         const pick = recommend('surprise', restaurants, dna);
         if (!pick) { toast('No matches. Try adjusting your profile.'); return; }
         this.state.activeMatch = pick;
@@ -2025,12 +2015,13 @@ const App = {
       }
     };
 
-    // Wire top pick — best recommendation (respects active category)
+    // Wire top pick — personalized recommendation (respects active category)
     document.getElementById('topPickBtn').onclick = async () => {
       Haptics.medium();
       try {
-        const restaurants = this._filteredByCat(await Pool.fetch(loc));
-        if (restaurants.length === 0) { toast('No restaurants in this category.'); return; }
+        const all = await Pool.fetch(loc);
+        const restaurants = this._filteredByCat(all);
+        if (restaurants.length === 0) { toast('No restaurants found. Try another category.'); return; }
         const pick = recommend('familiar', restaurants, dna);
         if (!pick) { toast('No matches. Try adjusting your profile.'); return; }
         this.state.activeMatch = pick;
@@ -2043,12 +2034,10 @@ const App = {
     // Wire browse — starts swipe mode
     document.getElementById('browseBtn').onclick = () => {
       Haptics.medium();
-      const cat = this.state.activeCat || 'all';
-      const mode = cat !== 'all' ? 'familiar' : 'surprise';
-      this.startSwipe(mode);
+      this.startSwipe('surprise');
     };
 
-    // Wire category chips — updates feed, top pick, and CTA context
+    // Wire category chips — updates what Decide/Browse act on
     this.state.activeCat = 'all';
     document.querySelectorAll('[data-cat]').forEach(el => {
       el.onclick = () => {
@@ -2056,30 +2045,16 @@ const App = {
         el.classList.add('active');
         Haptics.light();
         this.state.activeCat = el.dataset.cat;
-        this.refreshHomeContent(loc, dna);
       };
     });
 
     // Wire search
     document.getElementById('searchInput').oninput = (e) => {
       this.state.searchQuery = e.target.value.toLowerCase();
-      this.refreshHomeContent(loc, dna);
     };
 
-    // Fetch restaurants then render everything
-    try {
-      const restaurants = await Pool.fetch(loc);
-      this.state._allRestaurants = restaurants;
-      this.refreshHomeContent(loc, dna);
-    } catch (err) {
-      document.getElementById('feed').innerHTML = `
-        <div class="empty">
-          <div class="empty-icon">📡</div>
-          <p>${err.message || "Couldn't load restaurants."}</p>
-          <button class="btn-primary" style="max-width:200px;margin:16px auto 0;" onclick="App.renderHome(App.el())">Retry</button>
-        </div>
-      `;
-    }
+    // Pre-fetch restaurants so Decide/Browse are instant
+    Pool.fetch(loc).catch(() => {});
   },
 
   // Filter restaurants by active category
