@@ -125,70 +125,30 @@ else
   gray "No restaurants — skipping photo proxy test"
 fi
 
-# ─── 7. Frontend JS validation ───────────────────────
+# ─── 7. Frontend validation ──────────────────────────
 echo ""
-echo "── Frontend JS Validation ──"
+echo "── Frontend Validation ──"
 FRONTEND_HTML="web/index.html"
 if [ -f "$FRONTEND_HTML" ]; then
-  # Extract JS from <script> tags and validate syntax with Node
+  # JS syntax validation via Node (authoritative — catches all syntax errors including async/await)
   JS_CONTENT=$(sed -n '/<script>/,/<\/script>/p' "$FRONTEND_HTML" | sed '1d;$d')
-  JS_ERRORS=$(echo "$JS_CONTENT" | node --check 2>&1 || true)
-  if echo "$JS_ERRORS" | grep -qi "SyntaxError\|Unexpected\|Invalid"; then
-    check "Frontend JS syntax valid" "false"
-    gray "  $JS_ERRORS"
+  JS_CHECK=$(echo "$JS_CONTENT" | node --check 2>&1; echo "EXIT:$?")
+  JS_EXIT=$(echo "$JS_CHECK" | grep -o 'EXIT:[0-9]*' | cut -d: -f2)
+  if [ "$JS_EXIT" = "0" ]; then
+    check "Frontend JS syntax valid (node --check)" "true"
   else
-    check "Frontend JS syntax valid" "true"
+    check "Frontend JS syntax valid (node --check)" "false"
+    JS_ERR=$(echo "$JS_CHECK" | grep -v 'EXIT:' | head -3)
+    gray "  $JS_ERR"
   fi
 
-  # Check for common async/await mistakes — await outside async
-  AWAIT_ISSUES=$(echo "$JS_CONTENT" | python3 -c "
-import re, sys
-code = sys.stdin.read()
-# Find all function blocks and check for await in non-async ones
-# Simple heuristic: look for lines with 'await' and trace back to nearest function decl
-lines = code.split('\n')
-issues = []
-in_async = False
-brace_depth = 0
-func_stack = []
-for i, line in enumerate(lines, 1):
-    # Track function declarations
-    if re.search(r'\basync\b.*\bfunction\b|\basync\b\s+\w+\s*\(|async\s+\w+\s*\(', line):
-        func_stack.append(('async', brace_depth))
-    elif re.search(r'\bfunction\b\s*\w*\s*\(|^\s*\w+\s*\([^)]*\)\s*\{', line) and 'async' not in line:
-        func_stack.append(('sync', brace_depth))
-    # Track braces
-    brace_depth += line.count('{') - line.count('}')
-    # Clean up stack
-    while func_stack and func_stack[-1][1] >= brace_depth and brace_depth < func_stack[-1][1] + 1:
-        if len(func_stack) > 1:
-            func_stack.pop()
-        else:
-            break
-    # Check for await
-    if re.search(r'\bawait\b', line):
-        if func_stack and func_stack[-1][0] == 'sync':
-            issues.append(f'Line ~{i}: await in non-async function')
-if issues:
-    print('\\n'.join(issues[:5]))
-else:
-    print('OK')
-" 2>/dev/null || echo "OK")
-  if [ "$AWAIT_ISSUES" != "OK" ]; then
-    check "No await outside async functions" "false"
-    echo "$AWAIT_ISSUES" | while read -r line; do gray "  $line"; done
-  else
-    check "No await outside async functions" "true"
-  fi
-
-  # Check HTML is well-formed (basic)
+  # HTML well-formed check
   HTML_ERRORS=$(python3 -c "
 from html.parser import HTMLParser
 import sys
 class Checker(HTMLParser):
     def __init__(self):
         super().__init__()
-        self.errors = []
     def handle_starttag(self, tag, attrs): pass
     def handle_endtag(self, tag): pass
 try:
@@ -200,14 +160,18 @@ except Exception as e:
 " 2>/dev/null || echo "OK")
   check "HTML parses without errors" "$([ "$HTML_ERRORS" = "OK" ] && echo true || echo false)"
 
-  # Check no hardcoded API keys
-  LEAKED_KEY=$(grep -c 'AIza' "$FRONTEND_HTML" 2>/dev/null || echo "0")
+  # No hardcoded API keys (exact pattern for Google keys)
+  LEAKED_KEY=$(grep -cE 'AIza[A-Za-z0-9_-]{30,}' "$FRONTEND_HTML" 2>/dev/null || echo "0")
   check "No API keys in frontend source" "$([ "$LEAKED_KEY" = "0" ] && echo true || echo false)"
 
-  # Check critical functions exist
+  # Critical objects exist
   HAS_ROUTER=$(grep -c 'const Router' "$FRONTEND_HTML" 2>/dev/null || echo "0")
   HAS_APP=$(grep -c 'const App' "$FRONTEND_HTML" 2>/dev/null || echo "0")
   check "Router and App objects defined" "$([ "$HAS_ROUTER" -ge 1 ] && [ "$HAS_APP" -ge 1 ] && echo true || echo false)"
+
+  # File size sanity (should be under 500KB for a single-file PWA)
+  FILE_SIZE=$(wc -c < "$FRONTEND_HTML" 2>/dev/null || echo "0")
+  check "Frontend under 500KB ($(( FILE_SIZE / 1024 ))KB)" "$([ "$FILE_SIZE" -lt 512000 ] && echo true || echo false)"
 else
   gray "Frontend HTML not found at $FRONTEND_HTML — skipping"
 fi
@@ -215,20 +179,20 @@ fi
 # ─── 8. Error handling ───────────────────────────────
 echo ""
 echo "── Error Handling ──"
-BAD_COORDS=$(curl -sf -o /dev/null -w "%{http_code}" "$BASE/api/nearby?lat=999&lng=999" 2>/dev/null || echo "000")
-check "Invalid coords returns 400" "$([ "$BAD_COORDS" = "400" ] && echo true || echo false)"
+BAD_COORDS=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/api/nearby?lat=999&lng=999" 2>/dev/null || echo "000")
+check "Invalid coords returns 400 (got $BAD_COORDS)" "$([ "$BAD_COORDS" = "400" ] && echo true || echo false)"
 
-NOT_FOUND=$(curl -sf -o /dev/null -w "%{http_code}" "$BASE/api/nonexistent" 2>/dev/null || echo "000")
-check "Unknown route returns 404" "$([ "$NOT_FOUND" = "404" ] && echo true || echo false)"
+NOT_FOUND=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/api/nonexistent" 2>/dev/null || echo "000")
+check "Unknown route returns 404 (got $NOT_FOUND)" "$([ "$NOT_FOUND" = "404" ] && echo true || echo false)"
 
 # ─── 9. CORS ─────────────────────────────────────────
 echo ""
 echo "── CORS ──"
-CORS_OK=$(curl -sf -H "Origin: https://bite.pages.dev" -I "$BASE/health" 2>/dev/null | grep -qi 'access-control-allow-origin' && echo true || echo false)
+CORS_OK=$(curl -s -H "Origin: https://bite.pages.dev" -I "$BASE/health" 2>/dev/null | grep -qi 'access-control-allow-origin' && echo true || echo false)
 check "CORS headers present for allowed origin" "$CORS_OK"
 
-CORS_BAD=$(curl -sf -H "Origin: https://evil.com" -o /dev/null -w "%{http_code}" "$BASE/api/nearby?lat=37&lng=-122" 2>/dev/null || echo "000")
-check "Disallowed origin gets blocked" "$([ "$CORS_BAD" = "403" ] && echo true || echo false)"
+CORS_BAD=$(curl -s -H "Origin: https://evil.com" -o /dev/null -w "%{http_code}" "$BASE/api/nearby?lat=37&lng=-122" 2>/dev/null || echo "000")
+check "Disallowed origin gets blocked (got $CORS_BAD)" "$([ "$CORS_BAD" = "403" ] && echo true || echo false)"
 
 # ─── Summary ─────────────────────────────────────────
 echo ""

@@ -13,6 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Serif+Display&display=swap" rel="stylesheet" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' https://*.googleapis.com https://*.gstatic.com data: blob:; connect-src 'self' https://bite-worker.schuette-markus.workers.dev https://maps.google.com https://maps.apple.com;" />
 <style>
 :root {
   /* Deep blue palette */
@@ -1248,6 +1249,12 @@ a.r-card-rating:hover { background: var(--border); }
 // ═══════════════════════════════════════════════════════════════════
 // CONFIG
 // ═══════════════════════════════════════════════════════════════════
+// Sanitize strings before inserting into innerHTML to prevent XSS
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 const Config = {
   WORKER_URL: location.hostname === 'localhost'
     ? 'http://localhost:8787'
@@ -2274,7 +2281,7 @@ const App = {
               ${img ? '<img class="r-card-img" src="' + img + '" alt="' + topPick.name + '" loading="lazy" style="height:160px;" />' : ''}
               <div class="r-card-body">
                 <div class="r-card-row">
-                  <div class="r-card-name">${topPick.name}</div>
+                  <div class="r-card-name">${esc(topPick.name)}</div>
                   <div class="r-card-rating">
                     <svg viewBox="0 0 12 12"><path d="M6 1l1.5 3.2 3.5.4-2.6 2.3.7 3.4L6 8.5 2.9 10.3l.7-3.4L1 4.6l3.5-.4z"/></svg>
                     ${topPick.rating?.toFixed(1) || '—'}
@@ -2332,7 +2339,7 @@ const App = {
           }
           <div class="r-card-body">
             <div class="r-card-row">
-              <div class="r-card-name">${r.name}</div>
+              <div class="r-card-name">${esc(r.name)}</div>
               <a class="r-card-rating" href="${r.mapsUrl || '#'}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="See reviews on Google">
                 <svg viewBox="0 0 12 12"><path d="M6 1l1.5 3.2 3.5.4-2.6 2.3.7 3.4L6 8.5 2.9 10.3l.7-3.4L1 4.6l3.5-.4z"/></svg>
                 ${r.rating?.toFixed(1) || '—'}
@@ -2558,7 +2565,7 @@ const App = {
         <div class="swipe-hint no">Pass</div>
         <div class="card-photo" style="${img ? `background-image: url('${img}')` : 'background: linear-gradient(135deg, var(--primary-soft), var(--accent-soft))'}"></div>
         <div class="card-body">
-          <div class="card-name">${r.name}</div>
+          <div class="card-name">${esc(r.name)}</div>
           <div class="card-meta">
             <span>${r.cuisine}</span><span class="dot"></span><span>${'$'.repeat(Math.max(1, r.priceLevel))}</span><span class="dot"></span><span>${r.distance != null ? r.distance + ' mi' : 'nearby'}</span>
           </div>
@@ -2717,7 +2724,7 @@ const App = {
           <div class="match-photo" style="${img ? `background-image: url('${img}')` : 'background: linear-gradient(135deg, var(--primary-soft), var(--accent-soft))'}"></div>
           <div class="match-body">
             <div style="display:flex;align-items:start;justify-content:space-between;gap:12px;">
-              <div class="match-name">${r.name}</div>
+              <div class="match-name">${esc(r.name)}</div>
               <button id="saveToggle" data-tooltip="${isSaved ? 'Saved' : 'Save'}" style="flex-shrink:0;width:36px;height:36px;display:grid;place-items:center;border-radius:50%;background:var(--bg-2);">
                 <span style="display:flex;width:18px;height:18px;">${isSaved ? Icons.heartFilled : Icons.heart}</span>
               </button>
@@ -2993,7 +3000,7 @@ const App = {
                 <button class="saved-row" data-id="${r.id}">
                   <div class="saved-thumb" style="${img ? `background-image: url('${img}')` : ''}"></div>
                   <div class="saved-info">
-                    <div class="saved-name">${r.name}</div>
+                    <div class="saved-name">${esc(r.name)}</div>
                     <div class="saved-cuisine">${r.cuisine} · ${r.distance != null ? r.distance + ' mi' : 'nearby'}</div>
                   </div>
                 </button>
@@ -3181,6 +3188,7 @@ const App = {
           { h: 'No tracking', body: 'Bite uses zero analytics, zero tracking pixels, zero fingerprinting. We don\'t use Google Analytics, Mixpanel, Facebook Pixel, or any third-party tracker. We don\'t run Google Tag Manager.' },
           { h: 'No third-party data sharing', body: 'We do not sell, rent, or share any user data with third parties. Restaurant data comes from Google Places API via our proxy server, which strips all user-identifying information before forwarding requests.' },
           { h: 'Server logs', body: 'Our Cloudflare Worker logs only HTTP status codes and aggregate request counts for cost monitoring. No IP addresses, no user agents, no referrers are logged to persistent storage.' },
+          { h: 'Data retention', body: 'Your taste profile, saved restaurants, and location cache are stored in your browser\'s LocalStorage indefinitely until you clear them. Location data auto-expires after 30 minutes and is refreshed silently. Server-side cache entries (Workers KV) expire automatically: nearby results after 1 hour, geocode lookups after 30 days, reverse geocode after 7 days. No personal data is retained server-side.' },
           { h: 'Your rights', body: 'You can export all your data as JSON from Settings at any time. You can delete all local data with one tap in Settings. Since we don\'t store anything server-side, there\'s nothing to delete on our end.' },
           { h: 'Cookies', body: 'Bite does not set any cookies. We use LocalStorage for client-side preferences only. See our Cookie Policy for full details.' },
           { h: 'Changes', body: 'We\'ll update this policy as Bite evolves. Major changes will be noted in the app.' },
