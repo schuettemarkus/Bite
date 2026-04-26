@@ -6,7 +6,7 @@
 <title>Bite — Decide before the hunger does.</title>
 <meta name="description" content="The calmest restaurant decision tool. Find good food nearby in seconds." />
 <meta name="theme-color" content="#0C1B2A" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="Bite" />
 <link rel="manifest" href="manifest.json" />
@@ -1458,6 +1458,22 @@ function dietBadgeHtml(r) {
   return `<span class="diet-badge" style="background:#EDF0F5;color:var(--ink-muted);">${checkSvg} ${prefLabels.join(', ')} filter active</span>`;
 }
 
+// Indicator pill for restaurant attributes
+function indicatorHtml(ind) {
+  const map = {
+    'serves-alcohol': { cls: 'alcohol', icon: '🍷', label: 'Alcohol' },
+    '21+': { cls: 'age', icon: '🔞', label: '21+' },
+    'kid-friendly': { cls: 'kids', icon: '👨‍👩‍👧', label: 'Kid-friendly' },
+    'vegan': { cls: 'vegan', icon: '🌱', label: 'Vegan' },
+    'vegetarian': { cls: 'vegetarian', icon: '🥬', label: 'Vegetarian' },
+    'fine-dining': { cls: 'fine', icon: '✨', label: 'Fine dining' },
+    'quick-service': { cls: 'quick', icon: '⚡', label: 'Quick' },
+  };
+  const m = map[ind];
+  if (!m) return '';
+  return '<span class="indicator ' + m.cls + '">' + m.icon + ' ' + m.label + '</span>';
+}
+
 // Open/closed status with hours context
 function openStatusHtml(r) {
   if (r.openNow === true) {
@@ -1925,19 +1941,7 @@ const App = {
             ${r.tags?.length ? `<div class="r-card-tags">${r.tags.slice(0,3).map(t => `<span class="r-card-tag">${t}</span>`).join('')}</div>` : ''}
             <div style="display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap;">
               ${openStatusHtml(r)}
-              ${(r.indicators || []).map(ind => {
-                const map = {
-                  'serves-alcohol': { cls: 'alcohol', icon: '🍷', label: 'Alcohol' },
-                  '21+': { cls: 'age', icon: '🔞', label: '21+' },
-                  'kid-friendly': { cls: 'kids', icon: '👨‍👩‍👧', label: 'Kid-friendly' },
-                  'vegan': { cls: 'vegan', icon: '🌱', label: 'Vegan' },
-                  'vegetarian': { cls: 'vegetarian', icon: '🥬', label: 'Vegetarian' },
-                  'fine-dining': { cls: 'fine', icon: '✨', label: 'Fine dining' },
-                  'quick-service': { cls: 'quick', icon: '⚡', label: 'Quick' },
-                };
-                const m = map[ind];
-                return m ? \`<span class="indicator \${m.cls}">\${m.icon} \${m.label}</span>\` : '';
-              }).join('')}
+              ${(r.indicators || []).map(ind => indicatorHtml(ind)).join('')}
             </div>
           </div>
           ${isExpanded ? this.expandedDetail(r) : ''}
