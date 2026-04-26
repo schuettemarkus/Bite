@@ -71,7 +71,8 @@ export async function handleReverseGeocode(request, env, ctx) {
   const result = {
     neighborhood: pickNeighborhood(components),
     city: pickCity(components),
-    region: pickRegion(components)
+    region: pickRegion(components),
+    zip: pickZip(components)
   };
 
   ctx.waitUntil(
@@ -96,4 +97,9 @@ function pickCity(components = []) {
 function pickRegion(components = []) {
   const region = components.find(c => c.types.includes('administrative_area_level_1'));
   return region?.short_name || region?.long_name || null;
+}
+
+function pickZip(components = []) {
+  const zip = components.find(c => c.types.includes('postal_code'));
+  return zip?.long_name || null;
 }

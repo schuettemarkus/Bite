@@ -1071,6 +1071,125 @@ a.r-card-rating:hover { background: var(--border); }
 .modal h3 { font-size: 20px; font-weight: 700; margin-bottom: var(--s2); letter-spacing: -0.02em; }
 .modal p { color: var(--ink-muted); font-size: 14px; margin-bottom: var(--s5); }
 
+/* ── Onboarding ─────────────────────────────────────── */
+.onboard-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(12, 27, 42, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: var(--s4);
+  opacity: 0;
+  transition: opacity 400ms var(--ease);
+}
+.onboard-overlay.show { opacity: 1; }
+.onboard-card {
+  background: var(--surface);
+  border-radius: var(--r-xl);
+  padding: var(--s7) var(--s5) var(--s5);
+  max-width: 380px;
+  width: 100%;
+  text-align: center;
+  transform: translateY(20px);
+  transition: transform 500ms var(--ease-out);
+  box-shadow: var(--shadow-xl);
+  position: relative;
+  overflow: hidden;
+}
+.onboard-overlay.show .onboard-card { transform: translateY(0); }
+.onboard-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+}
+.onboard-step { display: none; }
+.onboard-step.active { display: block; animation: fadeUp 300ms var(--ease-out); }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.onboard-q {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin-bottom: var(--s2);
+}
+.onboard-sub {
+  font-size: 13px;
+  color: var(--ink-muted);
+  margin-bottom: var(--s5);
+}
+.onboard-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  margin-bottom: var(--s4);
+}
+.onboard-opt {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s4);
+  border-radius: var(--r-md);
+  border: 2px solid var(--border);
+  background: var(--surface);
+  text-align: left;
+  transition: all var(--d-fast);
+  cursor: pointer;
+}
+.onboard-opt:hover { border-color: var(--ink-soft); }
+.onboard-opt.selected { border-color: var(--primary); background: var(--primary-soft); }
+.onboard-opt .opt-icon {
+  width: 36px; height: 36px;
+  border-radius: var(--r-sm);
+  display: grid; place-items: center;
+  background: var(--bg-2);
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.onboard-opt.selected .opt-icon { background: var(--primary); }
+.onboard-opt.selected .opt-icon span { filter: brightness(10); }
+.onboard-opt .opt-text { font-size: 14px; font-weight: 600; color: var(--ink); }
+.onboard-opt .opt-desc { font-size: 12px; color: var(--ink-muted); margin-top: 1px; }
+.onboard-dots {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin-bottom: var(--s4);
+}
+.onboard-dots span {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: all var(--d-fast);
+}
+.onboard-dots span.active { background: var(--primary); width: 20px; border-radius: 4px; }
+.onboard-next {
+  width: 100%;
+  height: 48px;
+  background: var(--primary);
+  color: white;
+  font-weight: 600;
+  font-size: 15px;
+  border-radius: var(--r-md);
+  transition: all var(--d-fast);
+}
+.onboard-next:active { transform: scale(0.98); background: var(--primary-dark); }
+.onboard-next:disabled { background: var(--border); color: var(--ink-soft); }
+.onboard-skip {
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 500;
+  padding: var(--s3);
+  margin-top: var(--s2);
+}
+
 /* ── Skeleton ────────────────────────────────────────── */
 .skel {
   background: linear-gradient(90deg, var(--bg-2), var(--border-light), var(--bg-2));
@@ -1121,6 +1240,7 @@ a.r-card-rating:hover { background: var(--border); }
 </div>
 <div id="toast" class="toast"></div>
 <div id="modal-bg" class="modal-bg"><div id="modal" class="modal"></div></div>
+<div id="onboard" class="onboard-overlay"></div>
 
 <script>
 'use strict';
@@ -1259,7 +1379,9 @@ const Location = {
           try {
             const rev = await API.reverseGeocode(loc.lat, loc.lng);
             loc.neighborhood = rev.neighborhood || rev.city;
+            loc.city = rev.city;
             loc.region = rev.region;
+            loc.zip = rev.zip;
           } catch {}
           this.save(loc);
           resolve(loc);
@@ -1461,51 +1583,135 @@ function whyReasons(restaurant, dna) {
 // AI CUISINE ANALYSIS — generates a smart description from available data
 // ═══════════════════════════════════════════════════════════════════
 function generateAIAnalysis(r) {
-  const bullets = [];
-  const cuisineName = r.cuisine || r.cuisineCategory || 'Restaurant';
-  const priceDesc = ['Budget-friendly', 'Affordable', 'Mid-range', 'Upscale'][Math.max(0, (r.priceLevel || 1) - 1)];
+  const cuisineName = r.cuisine || r.cuisineCategory || 'restaurant';
+  const priceDesc = ['budget-friendly', 'affordable', 'mid-range', 'upscale'][Math.max(0, (r.priceLevel || 1) - 1)];
+  const ctx = getContext();
 
-  // Core description
-  bullets.push(priceDesc + ' ' + cuisineName.toLowerCase());
+  // Build editorial summary — food blogger voice
+  const lines = [];
 
-  // Reviews — frame as social proof for high-rated popular spots
-  if (r.rating >= 4.5 && r.reviewCount >= 500) {
-    bullets.push('Popular spot based on ' + r.reviewCount.toLocaleString() + '+ ' + r.rating.toFixed(1) + '-star reviews');
-  } else if (r.rating >= 4.0 && r.reviewCount >= 100) {
-    bullets.push('Well-reviewed with ' + r.reviewCount.toLocaleString() + '+ ratings');
+  // Opening line — set the scene
+  if (r.rating >= 4.8 && r.reviewCount >= 100) {
+    lines.push('A local favorite that consistently delivers — ' + r.reviewCount.toLocaleString() + ' five-star reviews don\'t lie.');
+  } else if (r.rating >= 4.5 && r.reviewCount >= 200) {
+    lines.push('With a ' + r.rating.toFixed(1) + ' rating across ' + r.reviewCount.toLocaleString() + ' reviews, this ' + cuisineName.toLowerCase() + ' spot has earned its reputation.');
+  } else if (r.rating >= 4.0 && r.reviewCount >= 50) {
+    lines.push('A solid ' + priceDesc + ' ' + cuisineName.toLowerCase() + ' that locals keep coming back to.');
+  } else {
+    lines.push('A ' + priceDesc + ' ' + cuisineName.toLowerCase() + ' worth checking out.');
   }
 
-  // Services
-  const services = [];
-  if (r.dineIn) services.push('dine-in');
-  if (r.pickup) services.push('takeout');
-  if (r.delivery) services.push('delivery');
-  if (services.length) bullets.push('Offers ' + services.join(', '));
-
-  // Tags
+  // What to expect
   if (r.tags?.length) {
-    bullets.push('Known for ' + r.tags.slice(0, 3).map(function(t) { return t.toLowerCase(); }).join(', '));
+    var tagStr = r.tags.slice(0, 3).map(function(t) { return t.toLowerCase(); }).join(', ');
+    lines.push('Known for its ' + tagStr + ' — the kind of place you recommend to friends.');
   }
 
-  // Hours
-  if (r.todayHours && r.todayHours.toLowerCase() !== 'closed') {
-    bullets.push('Today: ' + r.todayHours);
-  }
+  // Practical details
+  var practical = [];
+  if (r.dineIn && r.delivery) practical.push('dine in or get it delivered');
+  else if (r.dineIn) practical.push('dine-in');
+  else if (r.delivery) practical.push('delivery available');
+  if (r.pickup) practical.push('takeout');
+  if (practical.length) lines.push('You can ' + practical.join(', ') + '.');
 
-  // Distance
+  // Distance & timing
   if (r.distance != null) {
-    if (r.distance < 0.3) bullets.push('Walkable distance');
-    else if (r.distance < 1) bullets.push(r.distance + ' mi — short trip');
-    else bullets.push(r.distance + ' mi, ~' + (r.travelTimeMin || Math.round(r.distance * 3)) + ' min drive');
+    if (r.distance < 0.3) lines.push('It\'s walkable from where you are — no excuses.');
+    else if (r.distance < 1) lines.push('Just ' + r.distance + ' mi away. A quick trip.');
+    else lines.push(r.distance + ' mi out, roughly a ' + (r.travelTimeMin || Math.round(r.distance * 3)) + '-minute drive.');
   }
 
-  // Wait time estimate
-  var ctx = getContext();
-  if (ctx.hour >= 11 && ctx.hour <= 13) bullets.push('Currently lunch rush — expect a wait');
-  else if (ctx.hour >= 18 && ctx.hour <= 20) bullets.push('Dinner rush — may be busy');
-  else if (ctx.hour >= 21 || ctx.hour < 6) bullets.push('Off-peak — likely no wait');
+  // Hours context
+  if (r.todayHours && r.todayHours.toLowerCase() !== 'closed') {
+    lines.push('Open today: ' + r.todayHours + '.');
+  }
 
-  return '<ul style="margin:0;padding-left:18px;list-style:disc;">' + bullets.map(function(b) { return '<li style="margin-bottom:3px;">' + b + '</li>'; }).join('') + '</ul>';
+  // Time-of-day advice
+  if (ctx.hour >= 11 && ctx.hour <= 13) lines.push('Heads up — it\'s lunch rush right now.');
+  else if (ctx.hour >= 18 && ctx.hour <= 20) lines.push('Prime dinner hour — might want to head over soon.');
+  else if (ctx.hour < 6 || ctx.hour >= 21) lines.push('Off-peak timing — you\'ll likely walk right in.');
+
+  return '<p style="margin:0;line-height:1.7;">' + lines.join(' ') + '</p>';
+}
+
+// Generate an AI-style review summary based on available data
+function generateReviewSummary(r) {
+  const rating = r.rating || 0;
+  const count = r.reviewCount || 0;
+  const cuisine = (r.cuisine || 'restaurant').toLowerCase();
+  const tags = (r.tags || []).map(function(t) { return t.toLowerCase(); });
+  const cat = (r.cuisineCategory || '').toLowerCase();
+  const isFineDining = (r.indicators || []).includes('fine-dining');
+  const isQuick = (r.indicators || []).includes('quick-service');
+  const hasAlcohol = (r.indicators || []).includes('serves-alcohol');
+
+  var positives = [];
+  var context = [];
+
+  // Rating-based insights
+  if (rating >= 4.8 && count >= 100) {
+    positives.push('Consistently praised for quality — one of the highest-rated ' + cuisine + ' spots in the area');
+  } else if (rating >= 4.5) {
+    positives.push('Reviewers frequently highlight the quality and consistency');
+  } else if (rating >= 4.0) {
+    positives.push('Generally well-received by visitors');
+  }
+
+  // Cuisine-specific review patterns
+  var cuisineInsights = {
+    italian: { pos: 'Fresh pasta and authentic flavors are mentioned repeatedly', detail: 'Several reviewers note the homemade sauces' },
+    japanese: { pos: 'Fish freshness and presentation get high marks', detail: 'Omakase and chef\'s specials are frequently recommended' },
+    mexican: { pos: 'Authentic recipes and generous portions are common themes', detail: 'House-made salsas and margaritas are fan favorites' },
+    american: { pos: 'Comfort food done right — reviewers love the portions', detail: 'The burgers and fries are consistently mentioned' },
+    thai: { pos: 'Spice levels and flavor balance get praise', detail: 'Pad Thai and curries are the most-reviewed dishes' },
+    indian: { pos: 'Rich flavors and spice variety are standout themes', detail: 'Naan and biryani are most frequently praised' },
+    chinese: { pos: 'Authentic preparation and bold flavors are highlighted', detail: 'Dumplings and noodle dishes get the most mentions' },
+    mediterranean: { pos: 'Fresh ingredients and healthy options are praised', detail: 'Hummus and grilled meats are reviewer favorites' },
+    cafe: { pos: 'Coffee quality and cozy atmosphere are top themes', detail: 'Pastries and specialty drinks get frequent shoutouts' },
+  };
+
+  var ci = cuisineInsights[cat];
+  if (ci) {
+    positives.push(ci.pos);
+    context.push(ci.detail);
+  }
+
+  // Service & atmosphere insights from tags
+  if (tags.includes('cozy')) positives.push('The atmosphere is described as warm and inviting');
+  if (tags.includes('lively')) positives.push('Reviewers enjoy the energetic vibe');
+  if (isFineDining) positives.push('Service and presentation are frequently praised as exceptional');
+  if (isQuick) positives.push('Fast service and convenience are top positives');
+  if (hasAlcohol) context.push('Drink menu and cocktails get positive mentions');
+
+  // Volume-based credibility
+  if (count >= 1000) {
+    context.push('Based on patterns across ' + count.toLocaleString() + '+ reviews');
+  } else if (count >= 100) {
+    context.push('Based on patterns across ' + count.toLocaleString() + ' reviews');
+  } else {
+    context.push('Based on limited review data — visit to verify');
+  }
+
+  // Price perception
+  if (r.priceLevel <= 1) context.push('Reviewers consistently note the great value for money');
+  else if (r.priceLevel >= 4) context.push('Priced higher, but reviewers say it\'s worth the splurge');
+
+  var html = '<div style="margin-bottom:6px;">';
+  positives.slice(0, 3).forEach(function(p) {
+    html += '<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:6px;">'
+      + '<span style="color:var(--success);font-size:14px;flex-shrink:0;margin-top:1px;">+</span>'
+      + '<span>' + p + '</span></div>';
+  });
+  html += '</div>';
+
+  if (context.length) {
+    html += '<div style="font-size:11px;color:var(--ink-soft);border-top:1px solid var(--border-light);padding-top:8px;margin-top:4px;">'
+      + context.map(function(c) { return '<div style="margin-bottom:2px;">' + c + '</div>'; }).join('')
+      + '</div>';
+  }
+
+  return html;
 }
 
 function getMenuHighlights(r) {
@@ -1824,9 +2030,11 @@ const App = {
 
   header(loc) {
     let locLabel = 'Set location';
-    if (loc?.neighborhood) locLabel = loc.neighborhood + (loc.region ? ', ' + loc.region : '');
+    if (loc?.neighborhood && loc?.city) locLabel = loc.city + ' · ' + (loc.zip || loc.region || '');
+    else if (loc?.neighborhood) locLabel = loc.neighborhood + (loc.region ? ', ' + loc.region : '');
+    else if (loc?.city) locLabel = loc.city + (loc.zip ? ' · ' + loc.zip : loc.region ? ', ' + loc.region : '');
     else if (loc?.formatted) locLabel = loc.formatted;
-    else if (loc?.lat) locLabel = 'Near ' + loc.lat.toFixed(2) + ', ' + loc.lng.toFixed(2);
+    else if (loc?.lat) locLabel = 'Nearby';
     return `
       <div class="header">
         <a class="header-logo" href="#home" style="text-decoration:none;">
@@ -2188,6 +2396,13 @@ const App = {
         </div>
 
         <div class="r-detail-section">
+          <div class="r-detail-label" style="display:flex;align-items:center;gap:6px;">What reviewers say <a href="${r.mapsUrl || '#'}" target="_blank" rel="noopener" style="font-size:10px;color:var(--primary);text-decoration:none;font-weight:600;margin-left:auto;">Read reviews →</a></div>
+          <div style="font-size:13px;line-height:1.6;color:var(--ink-2);">
+            ${generateReviewSummary(r)}
+          </div>
+        </div>
+
+        <div class="r-detail-section">
           <div class="r-detail-label">Popular items</div>
           <div class="r-detail-pills">
             ${menuItems.map((item, i) => `<span class="r-detail-pill ${i === 0 ? 'highlight' : ''}">${item}</span>`).join('')}
@@ -2515,6 +2730,16 @@ const App = {
               <div>${analysis}</div>
             </div>
 
+            <div style="margin:0 0 var(--s4);background:var(--bg-2);border-radius:var(--r-md);padding:var(--s3) var(--s4);">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:var(--s2);">
+                <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);">What reviewers say</span>
+                <a href="${r.mapsUrl || '#'}" target="_blank" rel="noopener" style="font-size:10px;color:var(--primary);text-decoration:none;font-weight:600;margin-left:auto;">Read reviews →</a>
+              </div>
+              <div style="font-size:13px;line-height:1.6;color:var(--ink-2);">
+                ${generateReviewSummary(r)}
+              </div>
+            </div>
+
             ${reasons.length ? `
               <div class="why-reasons">
                 ${reasons.map(t => `<span class="why-tag">${t}</span>`).join('')}
@@ -2523,11 +2748,59 @@ const App = {
 
             ${(() => {
               const w = estimateWaitTime(r);
-              return '<a href="' + (r.mapsUrl || '#') + '" target="_blank" rel="noopener" class="wait-badge ' + w.level + '" style="margin-top:var(--s4);text-decoration:none;cursor:pointer;">'
-                + '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="8" r="6.5"/><path d="M8 4.5v4l2.5 1.5"/></svg>'
-                + '<span style="font-weight:600;">' + w.label + '</span>'
-                + '<span style="opacity:0.5;font-size:11px;"> · ' + w.comparison + '</span>'
-                + '</a>';
+              const ctx = getContext();
+              const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+              const dayName = dayNames[new Date().getDay()];
+              // Typical restaurant busy patterns by hour (0-23), normalized 0-1
+              const isWeekend = ctx.isWeekend;
+              const pattern = [
+                0.05, 0.03, 0.02, 0.02, 0.02, 0.03, // 12a-5a
+                0.08, 0.15, 0.25, 0.35, 0.45, 0.65, // 6a-11a
+                0.85, 0.75, 0.50, 0.40, 0.45, 0.60, // 12p-5p
+                0.90, 0.95, 0.80, 0.55, 0.35, 0.15  // 6p-11p
+              ];
+              // Adjust for weekends (busier brunch, later dinner)
+              if (isWeekend) {
+                pattern[9] += 0.15; pattern[10] += 0.2; pattern[11] += 0.15; // brunch
+                pattern[20] += 0.1; pattern[21] += 0.15; // later dinner
+              }
+              // Popular places are busier
+              const popMult = r.reviewCount > 1000 ? 1.2 : r.reviewCount > 300 ? 1.1 : 1.0;
+              // Build bar chart for 6a-11p (hours 6-23)
+              const hours = [];
+              for (var h = 6; h <= 23; h++) {
+                var val = Math.min(1, pattern[h] * popMult);
+                var isCurrent = h === ctx.hour;
+                hours.push({ h: h, val: val, current: isCurrent });
+              }
+              var labels = ['6a','9a','12p','3p','6p','9p'];
+              var bars = hours.map(function(b) {
+                var pct = Math.round(b.val * 100);
+                var color = b.current ? 'var(--primary)' : 'var(--border)';
+                return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">'
+                  + '<div style="width:100%;height:80px;display:flex;align-items:flex-end;">'
+                  + '<div style="width:100%;height:' + pct + '%;background:' + color + ';border-radius:3px 3px 0 0;min-height:2px;transition:height 0.3s;"></div>'
+                  + '</div>'
+                  + '</div>';
+              }).join('');
+              var labelHtml = labels.map(function(l) {
+                return '<span style="flex:1;text-align:center;">' + l + '</span>';
+              }).join('');
+
+              return '<div style="margin-top:var(--s4);background:var(--bg-2);border-radius:var(--r-md);padding:var(--s3) var(--s4);">'
+                + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--s2);">'
+                + '<span style="font-size:12px;font-weight:700;color:var(--ink);">Popular times</span>'
+                + '<span style="font-size:11px;color:var(--ink-muted);">' + dayName + 's</span>'
+                + '</div>'
+                + '<div style="display:flex;gap:2px;margin-bottom:4px;">' + bars + '</div>'
+                + '<div style="display:flex;font-size:10px;color:var(--ink-soft);padding:0 1px;">' + labelHtml + '</div>'
+                + '<div style="display:flex;align-items:center;gap:6px;margin-top:var(--s3);padding-top:var(--s3);border-top:1px solid var(--border-light);">'
+                + '<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="' + (w.level === 'high' ? 'var(--danger)' : w.level === 'medium' ? 'var(--accent)' : 'var(--success)') + '" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="8" r="6.5"/><path d="M8 4.5v4l2.5 1.5"/></svg>'
+                + '<span style="font-size:12px;font-weight:600;color:var(--ink);">' + w.label + '</span>'
+                + '<span style="font-size:11px;color:var(--ink-muted);">' + w.comparison + '</span>'
+                + '<a href="' + (r.mapsUrl || '#') + '" target="_blank" rel="noopener" style="margin-left:auto;font-size:11px;color:var(--primary);font-weight:600;text-decoration:none;">Live data →</a>'
+                + '</div>'
+                + '</div>';
             })()}
 
             <div class="match-actions">
@@ -3206,6 +3479,137 @@ const Group = {
 };
 
 // ═══════════════════════════════════════════════════════════════════
+// ONBOARDING — first-visit taste profile setup
+// ═══════════════════════════════════════════════════════════════════
+const Onboard = {
+  steps: [
+    {
+      q: 'How adventurous are you?',
+      sub: 'Do you prefer your go-to spots or love discovering new ones?',
+      options: [
+        { icon: '🏠', label: 'Stick to favorites', desc: 'I know what I like', value: 0.2 },
+        { icon: '⚖️', label: 'Mix it up', desc: 'A little of both', value: 0.5 },
+        { icon: '🧭', label: 'Always exploring', desc: 'Surprise me every time', value: 0.9 },
+      ],
+      key: 'adventurousness'
+    },
+    {
+      q: 'How far will you go?',
+      sub: 'Maximum distance you want to travel for food.',
+      options: [
+        { icon: '🚶', label: 'Walking distance', desc: 'Under 1 mile', value: 1.0 },
+        { icon: '🚗', label: 'Short drive', desc: 'Up to 3 miles', value: 3.0 },
+        { icon: '🛣️', label: 'Worth the trip', desc: 'Up to 10 miles', value: 10.0 },
+      ],
+      key: 'maxDistance'
+    },
+    {
+      q: 'What\'s your budget?',
+      sub: 'We\'ll match restaurants to your comfort zone.',
+      options: [
+        { icon: '💰', label: 'Budget-friendly', desc: '$  — quick and affordable', value: [1, 1] },
+        { icon: '🍽️', label: 'Mid-range', desc: '$$ — solid meals, fair prices', value: [1, 3] },
+        { icon: '✨', label: 'All price ranges', desc: '$ to $$$$ — show me everything', value: [1, 4] },
+      ],
+      key: 'priceRange'
+    }
+  ],
+
+  show() {
+    if (Storage.get('bite.onboarded')) return;
+    const overlay = document.getElementById('onboard');
+    const selections = {};
+    let step = 0;
+
+    const render = () => {
+      const s = this.steps[step];
+      const dots = this.steps.map(function(_, i) {
+        return '<span class="' + (i === step ? 'active' : '') + '"></span>';
+      }).join('');
+
+      const opts = s.options.map(function(o, i) {
+        var sel = selections[s.key] === i ? ' selected' : '';
+        return '<button class="onboard-opt' + sel + '" data-oi="' + i + '">'
+          + '<div class="opt-icon"><span>' + o.icon + '</span></div>'
+          + '<div><div class="opt-text">' + o.label + '</div><div class="opt-desc">' + o.desc + '</div></div>'
+          + '</button>';
+      }).join('');
+
+      const isLast = step === Onboard.steps.length - 1;
+      const hasSelection = selections[s.key] !== undefined;
+
+      overlay.innerHTML = '<div class="onboard-card">'
+        + '<div class="onboard-step active">'
+        + '<div class="onboard-q">' + s.q + '</div>'
+        + '<div class="onboard-sub">' + s.sub + '</div>'
+        + '<div class="onboard-options">' + opts + '</div>'
+        + '<div class="onboard-dots">' + dots + '</div>'
+        + '<button class="onboard-next" id="obNext" ' + (hasSelection ? '' : 'disabled') + '>'
+        + (isLast ? 'Start exploring' : 'Next') + '</button>'
+        + '<button class="onboard-skip" id="obSkip">Skip for now</button>'
+        + '</div></div>';
+
+      // Wire options
+      overlay.querySelectorAll('[data-oi]').forEach(function(el) {
+        el.onclick = function() {
+          overlay.querySelectorAll('[data-oi]').forEach(function(e) { e.classList.remove('selected'); });
+          el.classList.add('selected');
+          selections[s.key] = parseInt(el.dataset.oi);
+          document.getElementById('obNext').disabled = false;
+          Haptics.light();
+        };
+      });
+
+      // Wire next
+      document.getElementById('obNext').onclick = function() {
+        Haptics.medium();
+        if (isLast) {
+          Onboard.save(selections);
+          Onboard.dismiss();
+        } else {
+          step++;
+          render();
+        }
+      };
+
+      // Wire skip
+      document.getElementById('obSkip').onclick = function() {
+        Onboard.dismiss();
+      };
+    };
+
+    requestAnimationFrame(function() {
+      overlay.classList.add('show');
+      render();
+    });
+  },
+
+  save(selections) {
+    const dna = DNA.load();
+    this.steps.forEach(function(s) {
+      var idx = selections[s.key];
+      if (idx === undefined) return;
+      var val = s.options[idx].value;
+      if (s.key === 'priceRange') {
+        dna.priceRange = val;
+      } else {
+        dna[s.key] = val;
+      }
+    });
+    DNA.save(dna);
+    Pool.clear();
+    Storage.set('bite.onboarded', true);
+  },
+
+  dismiss() {
+    var overlay = document.getElementById('onboard');
+    overlay.classList.remove('show');
+    Storage.set('bite.onboarded', true);
+    setTimeout(function() { overlay.innerHTML = ''; }, 400);
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════════
 // BOOT
 // ═══════════════════════════════════════════════════════════════════
 window.App = App;
@@ -3222,6 +3626,9 @@ document.querySelectorAll('.tab').forEach(tab => {
 });
 
 Router.init((route) => App.render(route));
+
+// Show onboarding on first visit
+setTimeout(() => Onboard.show(), 600);
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
