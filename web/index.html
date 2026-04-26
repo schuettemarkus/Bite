@@ -1101,9 +1101,13 @@ a.r-card-rating:hover { background: var(--border); }
       <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1h-2z"/></svg>
       <span>Home</span>
     </button>
+    <button class="tab" data-tab="pick">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.5 5.5 6 .7-4.5 4 1.2 6.3L12 16.8l-5.2 2.7 1.2-6.3-4.5-4 6-.7z"/></svg>
+      <span>Pick</span>
+    </button>
     <button class="tab" data-tab="swipe">
-      <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0l-4-4m4 4l-4 4M5 13l4 4m-4-4l4-4"/></svg>
-      <span>Decide</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 11H5"/><path d="M13 5l7 7-7 7"/></svg>
+      <span>Browse</span>
     </button>
     <button class="tab" data-tab="saved">
       <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 4a1 1 0 011-1h12a1 1 0 011 1v17l-7-4-7 4V4z"/></svg>
@@ -1859,6 +1863,7 @@ const App = {
     const v = this.el();
     switch (path) {
       case 'home':    this.updateTabs('home'); return this.renderHome(v);
+      case 'pick':    this.updateTabs('pick'); return this.renderPick(v);
       case 'swipe':   this.updateTabs('swipe'); return this.renderSwipe(v);
       case 'match':   this.updateTabs('home'); return this.renderMatch(v, params[0]);
       case 'dna':     this.updateTabs('dna'); return this.renderDNA(v);
@@ -2226,6 +2231,34 @@ const App = {
   },
 
   // ─── Swipe ───────────────────────────────────────────────────────
+  // ─── Pick — instant personalized recommendation ──────────────────
+  async renderPick(v) {
+    const loc = Location.load();
+    const dna = DNA.load();
+    if (!loc) return Router.go('home');
+
+    v.innerHTML = `
+      ${this.subHeader('', 'home')}
+      <div class="view" style="display:grid;place-items:center;min-height:60vh;">
+        <div style="text-align:center;">
+          <div class="skel" style="width:60px;height:60px;border-radius:50%;margin:0 auto var(--s3);"></div>
+          <p style="color:var(--ink-muted);font-size:14px;">Finding your perfect pick...</p>
+        </div>
+      </div>
+    `;
+
+    try {
+      const restaurants = await Pool.fetch(loc);
+      const pick = recommend('familiar', restaurants, dna);
+      if (!pick) { toast('No matches found.'); Router.go('home'); return; }
+      this.state.activeMatch = pick;
+      this.renderMatch(v, pick.id);
+    } catch (err) {
+      toast(err.message || "Can't reach the kitchen.");
+      Router.go('home');
+    }
+  },
+
   async startSwipe(mode) {
     const loc = Location.load();
     const dna = DNA.load();
@@ -2242,7 +2275,7 @@ const App = {
     }
   },
 
-  renderSwipe(v) {
+  async renderSwipe(v) {
     const { swipeStack, swipeIndex } = this.state;
     const loc = Location.load();
 
