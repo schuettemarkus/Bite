@@ -1,23 +1,22 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
   <rect width="192" height="192" rx="40" fill="#1A3A5C"/>
-  <g transform="translate(24, 36)" stroke="#FFFFFF" fill="none">
-    <!-- Upper jaw -->
-    <path d="M12 52C12 28 32 10 72 10s60 18 60 42" stroke-width="6" stroke-linecap="round"/>
+  <g transform="translate(24, 38)" stroke="#FFFFFF" fill="none">
+    <!-- Upper gum -->
+    <path d="M10 38C10 16 32 4 72 4s62 12 62 34v8c0 4-3 7-7 7H17c-4 0-7-3-7-7v-8z" stroke-width="4"/>
     <!-- Upper teeth -->
-    <path d="M30 52v16" stroke-width="5.5" stroke-linecap="round"/>
-    <path d="M48 52v20" stroke-width="6" stroke-linecap="round"/>
-    <path d="M66 52v22" stroke-width="6.5" stroke-linecap="round"/>
-    <path d="M84 52v20" stroke-width="6" stroke-linecap="round"/>
-    <path d="M102 52v16" stroke-width="5.5" stroke-linecap="round"/>
-    <!-- Lower jaw -->
-    <path d="M12 68C12 92 32 110 72 110s60-18 60-42" stroke-width="6" stroke-linecap="round"/>
+    <rect x="19" y="48" width="13" height="17" rx="5.5" stroke-width="3.5"/>
+    <rect x="35" y="48" width="13" height="20" rx="5.5" stroke-width="3.5"/>
+    <rect x="52" y="48" width="14" height="22" rx="6" stroke-width="3.5"/>
+    <rect x="70" y="48" width="14" height="22" rx="6" stroke-width="3.5"/>
+    <rect x="88" y="48" width="13" height="20" rx="5.5" stroke-width="3.5"/>
+    <rect x="104" y="48" width="13" height="17" rx="5.5" stroke-width="3.5"/>
+    <!-- Lower gum -->
+    <path d="M10 92c0 12 22 20 62 20s62-8 62-12v-8c0-4-3-7-7-7H17c-4 0-7 3-7 7v0z" stroke-width="4"/>
     <!-- Lower teeth -->
-    <path d="M39 68v-13" stroke-width="5.5" stroke-linecap="round"/>
-    <path d="M57 68v-17" stroke-width="6" stroke-linecap="round"/>
-    <path d="M75 68v-17" stroke-width="6" stroke-linecap="round"/>
-    <path d="M93 68v-13" stroke-width="5.5" stroke-linecap="round"/>
-    <!-- Eyes -->
-    <circle cx="44" cy="32" r="6" fill="#FFFFFF"/>
-    <circle cx="100" cy="32" r="6" fill="#FFFFFF"/>
+    <rect x="27" y="72" width="13" height="16" rx="5.5" stroke-width="3.5"/>
+    <rect x="43" y="69" width="14" height="19" rx="6" stroke-width="3.5"/>
+    <rect x="61" y="68" width="14" height="20" rx="6" stroke-width="3.5"/>
+    <rect x="79" y="69" width="14" height="19" rx="6" stroke-width="3.5"/>
+    <rect x="96" y="72" width="13" height="16" rx="5.5" stroke-width="3.5"/>
   </g>
 </svg>
