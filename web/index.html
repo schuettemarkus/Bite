@@ -1299,7 +1299,7 @@ const API = {
     }
     return res.json();
   },
-  async nearby(lat, lng, radius = 80000) {
+  async nearby(lat, lng, radius = 50000) {
     return this._fetch(`/api/nearby?lat=${lat}&lng=${lng}&radius=${radius}`);
   },
   async place(id) {

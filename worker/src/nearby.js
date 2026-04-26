@@ -39,7 +39,7 @@ const INCLUDED_TYPES = [
 
 const MIN_RATING = 4.0;
 const DEFAULT_RADIUS_M = 8000; // 8km ~ 5 mi
-const MAX_RADIUS_M = 80000; // 80km ~ 50 mi
+const MAX_RADIUS_M = 50000; // 50km ~ 31 mi (Google Places API max)
 const MAX_RESULTS = 20;
 const CACHE_TTL_S = 3600; // 1 hour
 
@@ -81,8 +81,12 @@ export async function handleNearby(request, env, ctx) {
   );
 
   if (data.error) {
+    console.error('Google Places API error:', JSON.stringify(data.error).slice(0, 200));
     if (data.status === 429) {
       return jsonError("Bite's been busy. Try again in a moment.", 503);
+    }
+    if (data.error?.status === 'INVALID_ARGUMENT') {
+      return jsonError("Search area too large. Try a smaller distance.", 400);
     }
     return jsonError("Bite is having trouble reaching the kitchen.", 503);
   }
