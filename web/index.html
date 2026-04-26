@@ -1252,7 +1252,7 @@ const DEFAULT_DNA = () => ({
   priceRange: [1, 3],
   diet: [],
   adventurousness: 0.5,
-  maxDistance: 3.0,
+  maxDistance: 10,
   recentVisits: [],
   saved: [],
   matchHistory: []
@@ -1299,7 +1299,7 @@ const API = {
     }
     return res.json();
   },
-  async nearby(lat, lng, radius = 5000) {
+  async nearby(lat, lng, radius = 80000) {
     return this._fetch(`/api/nearby?lat=${lat}&lng=${lng}&radius=${radius}`);
   },
   async place(id) {
@@ -2003,34 +2003,34 @@ const App = {
     const city = esc(loc?.city || loc?.neighborhood || 'your area');
     const ctx = getContext();
     const greetings = [
-      "Let's find you something to eat in " + city,
-      "Hungry in " + city + "? We got you",
-      "What sounds good in " + city + "?",
-      "Good eats are calling in " + city,
-      "Time to eat. Let's do " + city + " right",
-      city + " has great food. Let's find it",
-      "Let's get you fed in " + city,
+      "Let's Find You Something To Eat In " + city,
+      "Hungry In " + city + "? We Got You",
+      "What Sounds Good In " + city + "?",
+      "Good Eats Are Calling In " + city,
+      "Time To Eat. Let's Do " + city + " Right",
+      city + " Has Great Food. Let's Find It",
+      "Let's Get You Fed In " + city,
     ];
     const mealTwists = {
       breakfast: [
-        "Rise and dine in " + city,
-        "Breakfast is calling in " + city,
-        "Morning fuel in " + city + "? Let's go",
+        "Rise And Dine In " + city,
+        "Breakfast Is Calling In " + city,
+        "Morning Fuel In " + city + "? Let's Go",
       ],
       lunch: [
-        "Lunch break in " + city + "? Say less",
-        "Midday hunger in " + city + "? Solved",
-        "Let's do lunch in " + city,
+        "Lunch Break In " + city + "? Say Less",
+        "Midday Hunger In " + city + "? Solved",
+        "Let's Do Lunch In " + city,
       ],
       dinner: [
-        "Dinner plans in " + city + "? We got options",
-        "Evening eats in " + city + ". Let's go",
-        "What's for dinner in " + city + "?",
+        "Dinner Plans In " + city + "? We Got Options",
+        "Evening Eats In " + city + ". Let's Go",
+        "What's For Dinner In " + city + "?",
       ],
       latenight: [
-        "Late night cravings in " + city + "?",
-        "Still up in " + city + "? Let's eat",
-        "Night owl eats in " + city,
+        "Late Night Cravings In " + city + "?",
+        "Still Up In " + city + "? Let's Eat",
+        "Night Owl Eats In " + city,
       ],
     };
     const pool = mealTwists[ctx.meal] || greetings;
@@ -2188,8 +2188,8 @@ const App = {
     v.innerHTML = `
       ${this.header(loc)}
       <div class="view">
-        <div style="padding:var(--s5) var(--s4) var(--s3);">
-          <h1 style="font-size:22px;font-weight:800;letter-spacing:-0.03em;color:var(--ink);line-height:1.3;">${this.homeHeadline(loc)}</h1>
+        <div style="padding:var(--s6) var(--s4) var(--s4);">
+          <h1 style="font-size:24px;font-weight:800;letter-spacing:-0.03em;line-height:1.3;"><span style="color:var(--primary);">${this.homeHeadline(loc)}</span></h1>
         </div>
 
         <div class="home-hero" style="min-height:auto;">
@@ -2289,17 +2289,38 @@ const App = {
   // Filter restaurants by active category
   _filteredByCat(restaurants) {
     const cats = this.state.activeCats || new Set(['all']);
-    let filtered = (restaurants || []).filter(r => !r.isGasStation);
+    const all = (restaurants || []).filter(r => !r.isGasStation);
+    let filtered = all;
+
     if (!cats.has('all') && cats.size > 0) {
-      filtered = filtered.filter(r => {
+      const matchesCat = function(r) {
         const rc = (r.cuisineCategory || '').toLowerCase();
         const rn = (r.cuisine || '').toLowerCase();
         for (const cat of cats) {
           if (rc.includes(cat) || rn.includes(cat)) return true;
         }
         return false;
-      });
+      };
+
+      filtered = all.filter(matchesCat);
+
+      // Auto-expand: if no results within distance, find nearest 3 matching the category anywhere
+      if (filtered.length === 0) {
+        // Get ALL restaurants matching this category regardless of distance
+        const allMatching = all.filter(matchesCat);
+        if (allMatching.length > 0) {
+          filtered = allMatching.sort(function(a, b) { return (a.distance || 999) - (b.distance || 999); }).slice(0, 3);
+          this.state._autoExpanded = true;
+        } else {
+          this.state._autoExpanded = false;
+        }
+      } else {
+        this.state._autoExpanded = false;
+      }
+    } else {
+      this.state._autoExpanded = false;
     }
+
     if (this.state.searchQuery) {
       filtered = filtered.filter(r =>
         (r.name || '').toLowerCase().includes(this.state.searchQuery) ||
@@ -2371,15 +2392,19 @@ const App = {
     const feed = feedEl || document.getElementById('feed');
     if (!feed) return;
     if (restaurants.length === 0) {
-      feed.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><p>No restaurants found.</p></div>`;
+      feed.innerHTML = '<div class="empty"><div class="empty-icon">🔍</div><p>No restaurants found.</p></div>';
       return;
     }
+    // Auto-expand notice
+    const expandNotice = this.state._autoExpanded
+      ? '<div style="padding:var(--s3) var(--s4) var(--s2);font-size:13px;color:var(--ink-muted);background:var(--accent-soft);border-radius:var(--r-md);margin-bottom:var(--s3);text-align:center;">None nearby — showing closest matches further out</div>'
+      : '';
     // Sort: open first, unknown middle, closed last
     const sorted = [...restaurants].sort((a, b) => {
       const rank = (r) => r.openNow === true ? 0 : r.openNow === null ? 1 : 2;
       return rank(a) - rank(b);
     });
-    feed.innerHTML = sorted.map(r => {
+    feed.innerHTML = expandNotice + sorted.map(r => {
       const img = API.imageUrl(r.imagePath);
       const isExpanded = this.state.expandedCard === r.id;
       return `
@@ -2500,11 +2525,11 @@ const App = {
   searchHeadline(loc) {
     const city = esc(loc?.city || loc?.neighborhood || 'town');
     const lines = [
-      "What's cooking in " + city + "?",
-      "The " + city + " food scene, curated",
-      "Every great meal starts with a search",
-      "Explore what " + city + " has to offer",
-      city + "'s best — all in one place",
+      "What's Cooking In " + city + "?",
+      "The " + city + " Food Scene, Curated",
+      "Every Great Meal Starts With A Search",
+      "Explore What " + city + " Has To Offer",
+      city + "'s Best — All In One Place",
     ];
     return lines[(new Date().getHours() + new Date().getDate()) % lines.length];
   },
@@ -2517,7 +2542,7 @@ const App = {
       ${this.subHeader('', 'home')}
       <div class="view">
         <div style="padding:var(--s4) var(--s4) var(--s2);">
-          <h2 style="font-size:18px;font-weight:700;letter-spacing:-0.02em;margin-bottom:var(--s3);">${this.searchHeadline(loc)}</h2>
+          <h2 style="font-size:20px;font-weight:800;letter-spacing:-0.02em;margin-bottom:var(--s3);color:var(--primary);">${this.searchHeadline(loc)}</h2>
         </div>
         <div class="search-bar">
           ${Icons.search}
@@ -3005,8 +3030,8 @@ const App = {
             <input type="range" min="0" max="100" value="${dna.adventurousness * 100}" class="slider" id="advSlider" />
           </div>
           <div class="slider-row">
-            <label><span>Distance</span><span id="distLabel">${dna.maxDistance.toFixed(1)} mi</span></label>
-            <input type="range" min="5" max="100" value="${dna.maxDistance * 10}" class="slider" id="distSlider" />
+            <label><span>Distance</span><span id="distLabel">${dna.maxDistance >= 10 ? Math.round(dna.maxDistance) : dna.maxDistance.toFixed(1)} mi</span></label>
+            <input type="range" min="1" max="50" value="${Math.round(dna.maxDistance)}" class="slider" id="distSlider" />
           </div>
           <div class="slider-row">
             <label><span>Price range</span><span id="priceLabel">${'$'.repeat(dna.priceRange[0])} – ${'$'.repeat(dna.priceRange[1])}</span></label>
@@ -3046,8 +3071,8 @@ const App = {
       refreshProfile();
     };
     document.getElementById('distSlider').oninput = (e) => {
-      const d = DNA.load(); d.maxDistance = e.target.value / 10; DNA.save(d);
-      document.getElementById('distLabel').textContent = d.maxDistance.toFixed(1) + ' mi';
+      const d = DNA.load(); d.maxDistance = parseInt(e.target.value); DNA.save(d);
+      document.getElementById('distLabel').textContent = (d.maxDistance >= 10 ? Math.round(d.maxDistance) : d.maxDistance.toFixed(1)) + ' mi';
       refreshProfile();
     };
     document.getElementById('priceMaxSlider').oninput = (e) => {
@@ -3098,9 +3123,9 @@ const App = {
     else parts.push('You mix favorites with fresh finds.');
 
     // Distance
-    if (dna.maxDistance <= 1) parts.push('You prefer walkable restaurants.');
-    else if (dna.maxDistance >= 8) parts.push('You\'re willing to travel for the right meal.');
-    else parts.push('You\'ll go up to ' + dna.maxDistance.toFixed(1) + ' mi for food.');
+    if (dna.maxDistance <= 2) parts.push('You prefer walkable restaurants.');
+    else if (dna.maxDistance >= 25) parts.push('You\'re willing to travel far for the right meal.');
+    else parts.push('You\'ll go up to ' + Math.round(dna.maxDistance) + ' mi for food.');
 
     // Price
     if (dna.priceRange[1] <= 1) parts.push('Budget-friendly is your sweet spot.');
@@ -3641,9 +3666,9 @@ const Onboard = {
       q: 'How far will you go?',
       sub: 'Maximum distance you want to travel for food.',
       options: [
-        { icon: '🚶', label: 'Walking distance', desc: 'Under 1 mile', value: 1.0 },
-        { icon: '🚗', label: 'Short drive', desc: 'Up to 3 miles', value: 3.0 },
-        { icon: '🛣️', label: 'Worth the trip', desc: 'Up to 10 miles', value: 10.0 },
+        { icon: '🚶', label: 'Walking distance', desc: 'Under 2 miles', value: 2 },
+        { icon: '🚗', label: 'Short drive', desc: 'Up to 10 miles', value: 10 },
+        { icon: '🛣️', label: 'Worth the trip', desc: 'Up to 50 miles', value: 50 },
       ],
       key: 'maxDistance'
     },

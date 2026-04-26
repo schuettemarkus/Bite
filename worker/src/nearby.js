@@ -38,8 +38,8 @@ const INCLUDED_TYPES = [
 ];
 
 const MIN_RATING = 4.0;
-const DEFAULT_RADIUS_M = 5000; // 5km ~ 3.1 mi
-const MAX_RADIUS_M = 50000;
+const DEFAULT_RADIUS_M = 8000; // 8km ~ 5 mi
+const MAX_RADIUS_M = 80000; // 80km ~ 50 mi
 const MAX_RESULTS = 20;
 const CACHE_TTL_S = 3600; // 1 hour
 
