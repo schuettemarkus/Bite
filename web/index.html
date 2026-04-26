@@ -258,85 +258,63 @@ a { color: inherit; text-decoration: none; }
 .section-hdr h2 { font-size: 18px; font-weight: 700; color: var(--ink); letter-spacing: -0.02em; }
 .section-hdr a { font-size: 13px; font-weight: 600; color: var(--primary); }
 
-/* ── Decide CTA ──────────────────────────────────────── */
-.decide-banner {
-  margin: var(--s2) var(--s4) var(--s5);
-  padding: var(--s6) var(--s6);
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 50%, #3568A0 100%);
-  background-size: 200% 200%;
-  animation: decideShimmer 6s ease-in-out infinite;
-  border-radius: var(--r-xl);
+/* ── Home banners — DoorDash-sleek ────────────────────── */
+.decide-banner, .browse-banner {
+  width: 100%;
+  padding: var(--s6) var(--s5);
+  border-radius: var(--r-lg);
   color: white;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  text-align: center;
-  gap: var(--s3);
-  box-shadow:
-    0 4px 20px rgba(26, 58, 92, 0.3),
-    0 0 40px rgba(26, 58, 92, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  gap: var(--s4);
   transition: transform var(--d-fast), box-shadow var(--d-fast);
   position: relative;
   overflow: hidden;
+  text-align: left;
 }
-.decide-banner::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: var(--r-xl);
-  padding: 1px;
-  background: linear-gradient(135deg, rgba(255,255,255,0.2), transparent, rgba(255,255,255,0.1));
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
+.decide-banner:active, .browse-banner:active { transform: scale(0.98); }
+.decide-banner .banner-icon, .browse-banner .banner-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--r-md);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.decide-banner .banner-icon svg, .browse-banner .banner-icon svg { width: 22px; height: 22px; stroke: white; fill: none; stroke-width: 2.2; }
+.decide-banner .banner-text h3, .browse-banner .banner-text h3 { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 2px; }
+.decide-banner .banner-text p, .browse-banner .banner-text p { font-size: 13px; opacity: 0.7; }
+.decide-banner > .act-arrow, .browse-banner > .act-arrow { margin-left: auto; opacity: 0.4; display: flex; flex-shrink: 0; }
+.decide-banner > .act-arrow svg { width: 20px; height: 20px; stroke: white; fill: none; stroke-width: 2; }
+.browse-banner > .act-arrow svg { width: 20px; height: 20px; stroke: var(--ink-soft); fill: none; stroke-width: 2; }
+
+/* Decide — deep blue glass */
+.decide-banner {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 24px rgba(26, 58, 92, 0.25);
 }
 .decide-banner::after {
   content: '';
   position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle at 30% 50%, rgba(255,255,255,0.06) 0%, transparent 60%);
-  animation: decideGlow 4s ease-in-out infinite alternate;
+  top: 0; right: 0;
+  width: 50%; height: 100%;
+  background: linear-gradient(135deg, transparent, rgba(255,255,255,0.04));
   pointer-events: none;
 }
-@keyframes decideShimmer {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
+.decide-banner .banner-icon { background: rgba(255,255,255,0.12); }
+
+/* Browse — light surface */
+.browse-banner {
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
 }
-@keyframes decideGlow {
-  0% { transform: translate(0, 0); opacity: 0.5; }
-  100% { transform: translate(10%, -5%); opacity: 1; }
-}
-.decide-banner:hover {
-  box-shadow:
-    0 6px 28px rgba(26, 58, 92, 0.4),
-    0 0 60px rgba(26, 58, 92, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15);
-}
-.decide-banner:active { transform: scale(0.97); }
-.decide-banner .banner-icon {
-  width: 56px;
-  height: 56px;
-  background: rgba(255,255,255,0.12);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  border: 1px solid rgba(255,255,255,0.15);
-  animation: iconPulse 3s ease-in-out infinite;
-}
-@keyframes iconPulse {
-  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,255,255,0.2); }
-  50% { transform: scale(1.05); box-shadow: 0 0 0 8px rgba(255,255,255,0); }
-}
-.decide-banner .banner-icon svg { width: 26px; height: 26px; stroke: white; fill: none; stroke-width: 2; }
-.decide-banner .banner-text h3 { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 2px; position: relative; z-index: 1; }
-.decide-banner .banner-text p { font-size: 14px; opacity: 0.75; position: relative; z-index: 1; }
+.browse-banner .banner-icon { background: var(--primary-soft); }
+.browse-banner .banner-icon svg { stroke: var(--primary); }
+.browse-banner .banner-text p { color: var(--ink-muted); opacity: 1; }
+.browse-banner .banner-text .act-arrow svg { stroke: var(--ink-soft); }
 
 /* ── Action cards row ─────────────────────────────────── */
 .action-row-home {
@@ -1952,39 +1930,23 @@ const App = {
     v.innerHTML = `
       ${this.header(loc)}
       <div class="view">
-        <div class="search-bar">
-          ${Icons.search}
-          <input type="text" placeholder="Search restaurants..." id="searchInput" />
-        </div>
-        <div class="cat-scroll" id="catChips">
-          ${['All', 'Italian', 'Japanese', 'Mexican', 'American', 'Thai', 'Indian', 'Chinese', 'Cafe'].map((c, i) => {
-            const emojis = ['🍽', '🍝', '🍱', '🌮', '🍔', '🍜', '🍛', '🥟', '☕'];
-            return '<button class="cat-chip ' + (i === 0 ? 'active' : '') + '" data-cat="' + c.toLowerCase() + '"><span class="emoji">' + emojis[i] + '</span>' + c + '</button>';
-          }).join('')}
-        </div>
-
-        <button class="decide-banner" id="decideBtn">
-          <div class="banner-icon">${Icons.go}</div>
-          <div class="banner-text">
-            <h3>Decide for me</h3>
-            <p>Personalized pick, right now.</p>
-          </div>
-        </button>
-
-        <div class="action-row-home">
-          <button class="action-card recommend" id="topPickBtn">
-            <div class="ac-icon">${Icons.sparkle}</div>
-            <div class="ac-text">
-              <div class="ac-label">Decide for me</div>
-              <div class="ac-sub">Personalized pick</div>
+        <div style="padding:var(--s4);display:flex;flex-direction:column;gap:var(--s3);min-height:calc(100dvh - var(--header-h) - var(--tab-h) - 16px);justify-content:center;">
+          <button class="decide-banner" id="decideBtn">
+            <div class="banner-icon">${Icons.go}</div>
+            <div class="banner-text">
+              <h3>Decide for me</h3>
+              <p>Personalized pick, right now.</p>
             </div>
+            <span class="act-arrow">${Icons.chevron}</span>
           </button>
-          <button class="action-card browse" id="browseBtn">
-            <div class="ac-icon">${Icons.zap}</div>
-            <div class="ac-text">
-              <div class="ac-label">Browse</div>
-              <div class="ac-sub">Swipe to discover</div>
+
+          <button class="browse-banner" id="browseBtn">
+            <div class="banner-icon">${Icons.sparkle}</div>
+            <div class="banner-text">
+              <h3>Browse</h3>
+              <p>Swipe to discover nearby spots.</p>
             </div>
+            <span class="act-arrow">${Icons.chevron}</span>
           </button>
         </div>
       </div>
@@ -1999,29 +1961,12 @@ const App = {
       ]);
     };
 
-    // Wire decide button — random pick (respects active category)
+    // Wire decide — personalized pick
     document.getElementById('decideBtn').onclick = async () => {
       Haptics.medium();
       try {
-        const all = await Pool.fetch(loc);
-        const restaurants = this._filteredByCat(all);
-        if (restaurants.length === 0) { toast('No restaurants found. Try another category.'); return; }
-        const pick = recommend('surprise', restaurants, dna);
-        if (!pick) { toast('No matches. Try adjusting your profile.'); return; }
-        this.state.activeMatch = pick;
-        Router.go('match/' + pick.id);
-      } catch (err) {
-        toast(err.message || "Can't reach the kitchen.");
-      }
-    };
-
-    // Wire top pick — personalized recommendation (respects active category)
-    document.getElementById('topPickBtn').onclick = async () => {
-      Haptics.medium();
-      try {
-        const all = await Pool.fetch(loc);
-        const restaurants = this._filteredByCat(all);
-        if (restaurants.length === 0) { toast('No restaurants found. Try another category.'); return; }
+        const restaurants = await Pool.fetch(loc);
+        if (restaurants.length === 0) { toast('No 4-star spots nearby.'); return; }
         const pick = recommend('familiar', restaurants, dna);
         if (!pick) { toast('No matches. Try adjusting your profile.'); return; }
         this.state.activeMatch = pick;
@@ -2037,23 +1982,7 @@ const App = {
       this.startSwipe('surprise');
     };
 
-    // Wire category chips — updates what Decide/Browse act on
-    this.state.activeCat = 'all';
-    document.querySelectorAll('[data-cat]').forEach(el => {
-      el.onclick = () => {
-        document.querySelectorAll('[data-cat]').forEach(c => c.classList.remove('active'));
-        el.classList.add('active');
-        Haptics.light();
-        this.state.activeCat = el.dataset.cat;
-      };
-    });
-
-    // Wire search
-    document.getElementById('searchInput').oninput = (e) => {
-      this.state.searchQuery = e.target.value.toLowerCase();
-    };
-
-    // Pre-fetch restaurants so Decide/Browse are instant
+    // Pre-fetch restaurants so buttons respond instantly
     Pool.fetch(loc).catch(() => {});
   },
 
