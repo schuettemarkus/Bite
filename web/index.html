@@ -1369,8 +1369,24 @@ const Location = {
       lng: data.lng,
       source: 'manual',
       neighborhood: data.neighborhood,
-      formatted: data.formatted
+      formatted: data.formatted,
+      city: null,
+      region: null,
+      zip: zip
     };
+    // Extract city from formatted address (e.g. "San Francisco, CA 94103, USA")
+    if (data.formatted) {
+      const parts = data.formatted.split(',').map(function(s) { return s.trim(); });
+      if (parts.length >= 2) loc.city = parts[0];
+    }
+    // Also reverse geocode for full details
+    try {
+      const rev = await API.reverseGeocode(loc.lat, loc.lng);
+      if (rev.city) loc.city = rev.city;
+      if (rev.neighborhood) loc.neighborhood = rev.neighborhood;
+      if (rev.region) loc.region = rev.region;
+      if (rev.zip) loc.zip = rev.zip;
+    } catch {}
     this.save(loc);
     return loc;
   },
@@ -2000,7 +2016,13 @@ const App = {
   el() { return document.getElementById('view'); },
 
   homeHeadline(loc) {
-    const city = esc(loc?.city || loc?.neighborhood || 'your area');
+    // Extract city — try all possible sources
+    let rawCity = loc?.city || loc?.neighborhood || '';
+    if (!rawCity && loc?.formatted) {
+      const parts = loc.formatted.split(',');
+      if (parts.length >= 2) rawCity = parts[0].trim();
+    }
+    const city = esc(rawCity || 'Your Area');
     const ctx = getContext();
     const greetings = [
       "Let's Find You Something To Eat In " + city,
@@ -2284,6 +2306,19 @@ const App = {
 
     // Pre-fetch restaurants so buttons respond instantly
     Pool.fetch(loc).catch(() => {});
+
+    // Backfill city if missing from older cached location
+    if (loc.lat && !loc.city) {
+      API.reverseGeocode(loc.lat, loc.lng).then(rev => {
+        if (rev.city) {
+          loc.city = rev.city;
+          loc.neighborhood = rev.neighborhood || loc.neighborhood;
+          loc.region = rev.region || loc.region;
+          loc.zip = rev.zip || loc.zip;
+          Location.save(loc);
+        }
+      }).catch(() => {});
+    }
   },
 
   // Filter restaurants by active category
