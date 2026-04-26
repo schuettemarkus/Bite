@@ -2281,7 +2281,7 @@ const App = {
         <div class="dna-summary">${summary}</div>
         <div class="slider-group">
           <div class="slider-row">
-            <label><span>Adventurousness</span><span id="advLabel">${this.advLabel(dna.adventurousness)}</span></label>
+            <label><span>Discovery</span><span id="advLabel">${this.advLabel(dna.adventurousness)}</span></label>
             <input type="range" min="0" max="100" value="${dna.adventurousness * 100}" class="slider" id="advSlider" />
           </div>
           <div class="slider-row">
@@ -2311,17 +2311,29 @@ const App = {
       </div>
     `;
 
+    // All profile changes save immediately, clear cached feed, and update the summary
+    const refreshProfile = () => {
+      Pool.clear(); // force re-filter on next Home visit
+      this.state._allRestaurants = null; // clear cached feed
+      const freshDna = DNA.load();
+      const summaryEl = document.querySelector('.dna-summary');
+      if (summaryEl) summaryEl.innerHTML = this.summarizeDNA(freshDna);
+    };
+
     document.getElementById('advSlider').oninput = (e) => {
       const d = DNA.load(); d.adventurousness = e.target.value / 100; DNA.save(d);
       document.getElementById('advLabel').textContent = this.advLabel(d.adventurousness);
+      refreshProfile();
     };
     document.getElementById('distSlider').oninput = (e) => {
       const d = DNA.load(); d.maxDistance = e.target.value / 10; DNA.save(d);
       document.getElementById('distLabel').textContent = d.maxDistance.toFixed(1) + ' mi';
+      refreshProfile();
     };
     document.getElementById('priceMaxSlider').oninput = (e) => {
       const d = DNA.load(); d.priceRange = [1, parseInt(e.target.value)]; DNA.save(d);
       document.getElementById('priceLabel').textContent = '$'.repeat(d.priceRange[0]) + ' – ' + '$'.repeat(d.priceRange[1]);
+      refreshProfile();
     };
     document.querySelectorAll('[data-diet]').forEach(el => {
       el.onclick = () => {
@@ -2332,14 +2344,15 @@ const App = {
         DNA.save(d);
         el.classList.toggle('on');
         Haptics.light();
+        refreshProfile();
       };
     });
   },
 
   advLabel(v) {
-    if (v < 0.3) return 'Reliable';
-    if (v < 0.7) return 'Balanced';
-    return 'Adventurous';
+    if (v < 0.3) return 'Go-to spots';
+    if (v < 0.7) return 'Mix it up';
+    return 'Surprise me';
   },
 
   summarizeDNA(dna) {
@@ -2352,9 +2365,9 @@ const App = {
     const intro = top.length === 1
       ? `You tend to gravitate toward <em>${top[0]}</em>.`
       : `You tend to gravitate toward <em>${top.slice(0, -1).join(', ')}</em> and <em>${top.at(-1)}</em>.`;
-    const advText = dna.adventurousness > 0.65 ? 'You like to explore.'
-                  : dna.adventurousness < 0.35 ? 'You stick to what you love.'
-                  : 'You balance the new with the familiar.';
+    const advText = dna.adventurousness > 0.65 ? 'You love discovering new spots.'
+                  : dna.adventurousness < 0.35 ? 'You know what you like.'
+                  : 'You mix favorites with fresh finds.';
     return `${intro} ${advText}`;
   },
 
