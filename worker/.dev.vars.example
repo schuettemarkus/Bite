@@ -1,0 +1,8 @@
+# Copy this file to `.dev.vars` for local development.
+# `.dev.vars` is gitignored — never commit secrets.
+#
+# Get a key from console.cloud.google.com after enabling:
+#   • Places API (New)
+#   • Geocoding API
+
+GOOGLE_PLACES_KEY=your-google-api-key-here

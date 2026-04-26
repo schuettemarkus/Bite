@@ -1,0 +1,17 @@
+{
+  "name": "bite-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Cloudflare Worker proxy for the Bite app — Google Places API + caching + rate limit",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "test:health": "curl -s http://localhost:8787/health",
+    "test:nearby": "curl -s 'http://localhost:8787/api/nearby?lat=37.7749&lng=-122.4194' | head -200"
+  },
+  "devDependencies": {
+    "wrangler": "^3.78.0"
+  }
+}

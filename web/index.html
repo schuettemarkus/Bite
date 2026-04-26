@@ -1,0 +1,2707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1" />
+<title>Bite — Decide before the hunger does.</title>
+<meta name="description" content="The calmest restaurant decision tool. Find good food nearby in seconds." />
+<meta name="theme-color" content="#0C1B2A" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Bite" />
+<link rel="manifest" href="manifest.json" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Serif+Display&display=swap" rel="stylesheet" />
+<style>
+:root {
+  /* Deep blue palette */
+  --bg: #F5F7FA;
+  --bg-2: #EDF0F5;
+  --surface: #FFFFFF;
+  --surface-raised: #FFFFFF;
+  --border: #E2E6ED;
+  --border-light: #EDF0F5;
+
+  /* Ink */
+  --ink: #0C1B2A;
+  --ink-2: #1E3148;
+  --ink-muted: #5A6B80;
+  --ink-soft: #8E9BAD;
+
+  /* Primary — deep blue */
+  --primary: #1A3A5C;
+  --primary-dark: #0F2640;
+  --primary-light: #2A5080;
+  --primary-soft: #E8EFF7;
+  --primary-glow: rgba(26, 58, 92, 0.12);
+
+  /* Accent — warm amber */
+  --accent: #E8922F;
+  --accent-soft: #FFF3E0;
+  --accent-dark: #D07A1A;
+
+  /* Success / status */
+  --success: #2E9E5A;
+  --success-soft: #E6F5EC;
+  --danger: #D94B4B;
+  --danger-soft: #FDE8E8;
+
+  /* Effects */
+  --shadow-sm: 0 1px 3px rgba(12, 27, 42, 0.06), 0 1px 2px rgba(12, 27, 42, 0.04);
+  --shadow-md: 0 4px 12px rgba(12, 27, 42, 0.08), 0 1px 3px rgba(12, 27, 42, 0.04);
+  --shadow-lg: 0 12px 32px rgba(12, 27, 42, 0.12), 0 2px 6px rgba(12, 27, 42, 0.04);
+  --shadow-xl: 0 20px 48px rgba(12, 27, 42, 0.16);
+
+  /* Radius */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 24px;
+  --r-full: 999px;
+
+  /* Spacing */
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px; --s7: 32px; --s8: 48px;
+
+  /* Type */
+  --font: 'Inter', -apple-system, system-ui, sans-serif;
+  --font-display: 'DM Serif Display', Georgia, serif;
+
+  /* Motion */
+  --d-fast: 150ms;
+  --d-base: 250ms;
+  --d-slow: 400ms;
+  --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Layout */
+  --tab-h: 64px;
+  --header-h: 56px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+button, input { font: inherit; color: inherit; border: none; background: none; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; opacity: 0.5; }
+:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 4px; }
+a { color: inherit; text-decoration: none; }
+
+/* ── App shell ─────────────────────────────────────── */
+#app {
+  max-width: 480px;
+  margin: 0 auto;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background: var(--bg);
+}
+#view {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+.view { animation: viewIn var(--d-base) var(--ease-out) both; }
+@keyframes viewIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Header ─────────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
+  height: var(--header-h);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-light);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+.header-logo {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  flex-shrink: 0;
+}
+.header-logo svg { height: 28px; width: auto; }
+.header-logo span {
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: -0.03em;
+  color: var(--primary);
+}
+.header-loc {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+  margin-left: auto;
+  padding: 6px 12px;
+  border-radius: var(--r-full);
+  background: var(--primary-soft);
+  transition: background var(--d-fast);
+}
+.header-loc:hover { background: #D6E3F2; }
+.header-loc svg { width: 14px; height: 14px; stroke: var(--primary); fill: none; stroke-width: 2; }
+
+/* ── Bottom tabs ─────────────────────────────────────── */
+.tab-bar {
+  display: flex;
+  height: var(--tab-h);
+  background: var(--surface);
+  border-top: 1px solid var(--border-light);
+  padding-bottom: env(safe-area-inset-bottom);
+  flex-shrink: 0;
+}
+.tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: var(--ink-soft);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: color var(--d-fast);
+  position: relative;
+}
+.tab svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+.tab.active { color: var(--primary); }
+.tab.active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 2px;
+  background: var(--primary);
+  border-radius: 0 0 2px 2px;
+}
+
+/* ── Search bar ─────────────────────────────────────── */
+.search-bar {
+  margin: var(--s4) var(--s4) var(--s3);
+  position: relative;
+}
+.search-bar input {
+  width: 100%;
+  height: 44px;
+  padding: 0 16px 0 40px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  font-size: 14px;
+  color: var(--ink);
+  transition: all var(--d-fast);
+}
+.search-bar input::placeholder { color: var(--ink-soft); }
+.search-bar input:focus { background: var(--surface); border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow); outline: none; }
+.search-bar svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; stroke: var(--ink-soft); fill: none; stroke-width: 2; }
+
+/* ── Category chips ─────────────────────────────────── */
+.cat-scroll {
+  display: flex;
+  gap: var(--s2);
+  overflow-x: auto;
+  padding: 0 var(--s4) var(--s4);
+  scrollbar-width: none;
+}
+.cat-scroll::-webkit-scrollbar { display: none; }
+.cat-chip {
+  flex-shrink: 0;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: var(--r-full);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-2);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all var(--d-fast);
+  white-space: nowrap;
+}
+.cat-chip:hover { border-color: var(--ink-soft); }
+.cat-chip.active { background: var(--primary); color: white; border-color: var(--primary); }
+.cat-chip .emoji { font-size: 15px; }
+
+/* ── Section header ──────────────────────────────────── */
+.section-hdr {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: var(--s5) var(--s4) var(--s3);
+}
+.section-hdr h2 { font-size: 18px; font-weight: 700; color: var(--ink); letter-spacing: -0.02em; }
+.section-hdr a { font-size: 13px; font-weight: 600; color: var(--primary); }
+
+/* ── Quick-decide banner ─────────────────────────────── */
+.decide-banner {
+  margin: 0 var(--s4) var(--s4);
+  padding: var(--s5) var(--s6);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+  border-radius: var(--r-lg);
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+  box-shadow: var(--shadow-md);
+  transition: transform var(--d-fast);
+}
+.decide-banner:active { transform: scale(0.98); }
+.decide-banner .banner-icon {
+  width: 48px;
+  height: 48px;
+  background: rgba(255,255,255,0.15);
+  border-radius: var(--r-md);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.decide-banner .banner-icon svg { width: 24px; height: 24px; stroke: white; fill: none; stroke-width: 1.8; }
+.decide-banner .banner-text h3 { font-size: 16px; font-weight: 700; margin-bottom: 2px; }
+.decide-banner .banner-text p { font-size: 13px; opacity: 0.8; }
+
+/* ── Restaurant feed ─────────────────────────────────── */
+.feed { padding: 0 var(--s4) var(--s4); display: flex; flex-direction: column; gap: var(--s3); }
+.r-card {
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--d-fast), transform var(--d-fast);
+  border: 1px solid var(--border-light);
+}
+.r-card:active { transform: scale(0.99); }
+.r-card-img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  background: var(--bg-2);
+  display: block;
+}
+.r-card-img-placeholder {
+  width: 100%;
+  height: 180px;
+  background: linear-gradient(135deg, var(--primary-soft), var(--accent-soft));
+  display: grid;
+  place-items: center;
+}
+.r-card-img-placeholder svg { width: 40px; height: 40px; stroke: var(--ink-soft); fill: none; stroke-width: 1; }
+.r-card-body { padding: var(--s3) var(--s4) var(--s4); }
+.r-card-row { display: flex; align-items: center; justify-content: space-between; }
+.r-card-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+.r-card-rating {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--bg-2);
+  padding: 2px 8px;
+  border-radius: var(--r-full);
+  flex-shrink: 0;
+}
+.r-card-rating svg { width: 12px; height: 12px; fill: var(--accent); stroke: none; }
+.r-card-meta {
+  font-size: 13px;
+  color: var(--ink-muted);
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.r-card-meta .dot { width: 3px; height: 3px; background: var(--ink-soft); border-radius: 50%; flex-shrink: 0; }
+.r-card-tags { display: flex; gap: 6px; margin-top: var(--s2); flex-wrap: wrap; }
+.r-card-tag {
+  padding: 3px 10px;
+  background: var(--bg-2);
+  border-radius: var(--r-full);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  text-transform: capitalize;
+}
+.r-card-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: var(--s2);
+}
+.r-card-status.open { color: var(--success); }
+.r-card-status.closed { color: var(--danger); }
+.r-card-status .status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+/* ── Expanded restaurant detail ──────────────────────── */
+.r-detail {
+  border-top: 1px solid var(--border-light);
+  padding: var(--s4);
+  animation: slideDown var(--d-base) var(--ease-out);
+}
+@keyframes slideDown {
+  from { opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; }
+  to   { opacity: 1; max-height: 600px; }
+}
+.r-detail-section { margin-bottom: var(--s4); }
+.r-detail-section:last-child { margin-bottom: 0; }
+.r-detail-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+  margin-bottom: var(--s2);
+}
+.r-detail-ai {
+  background: var(--primary-soft);
+  border-radius: var(--r-md);
+  padding: var(--s3) var(--s4);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ink-2);
+  border-left: 3px solid var(--primary);
+}
+.r-detail-ai .ai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--primary);
+  margin-bottom: var(--s2);
+}
+.r-detail-ai .ai-badge svg { width: 12px; height: 12px; stroke: var(--primary); fill: none; stroke-width: 2; }
+.r-detail-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.r-detail-pill {
+  padding: 4px 12px;
+  border-radius: var(--r-full);
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--bg-2);
+  color: var(--ink-muted);
+}
+.r-detail-pill.highlight { background: var(--accent-soft); color: var(--accent-dark); }
+.r-detail-actions { display: flex; gap: var(--s2); margin-top: var(--s3); }
+.r-detail-btn {
+  flex: 1;
+  height: 44px;
+  border-radius: var(--r-md);
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all var(--d-fast);
+}
+.r-detail-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
+.r-detail-btn.primary { background: var(--primary); color: white; }
+.r-detail-btn.primary:active { background: var(--primary-dark); }
+.r-detail-btn.secondary { background: var(--bg-2); color: var(--ink-2); }
+.r-detail-btn.secondary:hover { background: var(--border); }
+
+/* ── Primer (first open) ─────────────────────────────── */
+.primer {
+  padding: var(--s8) var(--s6);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: calc(100dvh - var(--header-h) - var(--tab-h));
+  justify-content: center;
+}
+.primer-icon {
+  width: 72px; height: 72px;
+  background: var(--primary-soft);
+  border-radius: 50%;
+  display: grid; place-items: center;
+  margin-bottom: var(--s6);
+}
+.primer-icon svg { width: 32px; height: 32px; stroke: var(--primary); fill: none; stroke-width: 1.5; }
+.primer h2 {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: var(--s2);
+}
+.primer p { color: var(--ink-muted); font-size: 15px; max-width: 280px; margin-bottom: var(--s7); line-height: 1.6; }
+.btn-primary {
+  width: 100%;
+  max-width: 320px;
+  height: 52px;
+  background: var(--primary);
+  color: white;
+  font-weight: 600;
+  font-size: 15px;
+  border-radius: var(--r-md);
+  transition: all var(--d-fast);
+  margin-bottom: var(--s3);
+}
+.btn-primary:active { transform: scale(0.98); background: var(--primary-dark); }
+.btn-link { color: var(--primary); font-weight: 600; font-size: 14px; padding: var(--s3); }
+
+.zip-input {
+  width: 100%;
+  max-width: 320px;
+  height: 52px;
+  padding: 0 var(--s4);
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  font-size: 17px;
+  text-align: center;
+  letter-spacing: 0.1em;
+  margin-top: var(--s3);
+}
+.zip-input:focus { background: var(--surface); border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow); outline: none; }
+
+/* ── Swipe stack ─────────────────────────────────────── */
+.swipe-shell {
+  position: relative;
+  height: calc(100dvh - var(--header-h) - var(--tab-h) - 20px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--s4);
+}
+.stack-container {
+  position: relative;
+  width: 100%;
+  flex: 1;
+  display: grid;
+  place-items: center;
+}
+.card {
+  position: absolute;
+  width: 92%;
+  max-width: 380px;
+  aspect-ratio: 3 / 4.2;
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  display: flex;
+  flex-direction: column;
+  will-change: transform;
+  touch-action: pan-y;
+  border: 1px solid var(--border-light);
+}
+.card.dragging { transition: none !important; }
+.card.springing { transition: transform var(--d-base) var(--ease-spring); }
+.card.flying-right { transition: transform 380ms var(--ease-out); transform: translateX(140vw) rotate(18deg); opacity: 0; }
+.card.flying-left { transition: transform 380ms var(--ease-out); transform: translateX(-140vw) rotate(-18deg); opacity: 0; }
+.card.flying-up { transition: transform 380ms var(--ease-out); transform: translateY(-100vh) scale(0.7); opacity: 0; }
+.card-photo {
+  height: 58%;
+  background: var(--bg-2);
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+.card-photo::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0; height: 60%;
+  background: linear-gradient(to top, rgba(12, 27, 42, 0.3), transparent);
+}
+.card-body { padding: var(--s4) var(--s5); flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.card-name { font-size: 22px; font-weight: 700; line-height: 1.2; letter-spacing: -0.02em; }
+.card-meta { font-size: 14px; color: var(--ink-muted); display: flex; align-items: center; gap: 6px; }
+.card-meta .dot { width: 3px; height: 3px; background: var(--ink-soft); border-radius: 50%; }
+.card-rating { font-size: 14px; color: var(--ink-muted); }
+.card-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: auto; }
+.card-tag {
+  padding: 4px 12px;
+  background: var(--bg-2);
+  border-radius: var(--r-full);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+.swipe-hint {
+  position: absolute;
+  top: 20px;
+  padding: 8px 20px;
+  border-radius: var(--r-full);
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 80ms;
+  z-index: 2;
+}
+.swipe-hint.yes { right: 20px; background: var(--success-soft); color: var(--success); }
+.swipe-hint.no { left: 20px; background: var(--danger-soft); color: var(--danger); }
+
+.swipe-actions {
+  display: flex;
+  justify-content: center;
+  gap: var(--s6);
+  padding: var(--s4) 0 var(--s2);
+}
+.action-btn {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  display: grid; place-items: center;
+  transition: all var(--d-fast);
+  position: relative;
+}
+.action-btn:active { transform: scale(0.88); }
+.action-btn svg { width: 22px; height: 22px; stroke-width: 2; fill: none; }
+.action-btn.no { border-color: var(--danger-soft); }
+.action-btn.no:hover { background: var(--danger-soft); }
+.action-btn.no svg { stroke: var(--danger); }
+.action-btn.save { border-color: var(--accent-soft); }
+.action-btn.save:hover { background: var(--accent-soft); }
+.action-btn.save svg { stroke: var(--accent); }
+.action-btn.yes { border-color: var(--success-soft); }
+.action-btn.yes:hover { background: var(--success-soft); }
+.action-btn.yes svg { stroke: var(--success); }
+
+/* Tooltips */
+[data-tooltip] { position: relative; }
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  padding: 4px 10px;
+  background: var(--ink);
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 6px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--d-fast), transform var(--d-fast);
+}
+[data-tooltip]:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.dots { display: flex; gap: 6px; justify-content: center; padding: var(--s2); }
+.dots span {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: background var(--d-fast);
+}
+.dots span.done { background: var(--primary-soft); }
+.dots span.active { background: var(--primary); }
+
+/* ── Match view ──────────────────────────────────────── */
+.match {
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  margin: var(--s4);
+  animation: matchIn 500ms var(--ease-out);
+  border: 1px solid var(--border-light);
+}
+@keyframes matchIn {
+  from { opacity: 0; transform: scale(0.95) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.match-photo { height: 220px; background-size: cover; background-position: center; position: relative; }
+.match-photo::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0; height: 50%;
+  background: linear-gradient(to top, rgba(12, 27, 42, 0.2), transparent);
+}
+.match-body { padding: var(--s5); }
+.match-name {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  margin-bottom: 6px;
+}
+.match-meta { color: var(--ink-muted); font-size: 14px; margin-bottom: var(--s4); }
+.match-actions { display: flex; flex-direction: column; gap: var(--s2); }
+.match-action {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  height: 52px;
+  padding: 0 var(--s4);
+  border-radius: var(--r-md);
+  font-weight: 600;
+  font-size: 15px;
+  transition: all var(--d-fast);
+  text-decoration: none;
+}
+.match-action:active { transform: scale(0.98); }
+.match-action.maps { background: var(--primary); color: white; }
+.match-action.delivery { background: var(--accent-soft); color: var(--accent-dark); }
+.match-action.call { background: var(--bg-2); color: var(--ink-2); }
+.match-action .act-icon { font-size: 18px; }
+.match-action .act-arrow { margin-left: auto; opacity: 0.5; }
+.why-reasons { display: flex; flex-wrap: wrap; gap: 6px; padding-top: var(--s4); }
+.why-tag {
+  padding: 5px 12px;
+  background: var(--primary-soft);
+  border-radius: var(--r-full);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary);
+}
+.dismiss-link {
+  display: block;
+  text-align: center;
+  padding: var(--s5);
+  color: var(--ink-soft);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* ── Taste DNA ───────────────────────────────────────── */
+.dna-header { text-align: center; padding: var(--s6) 0 var(--s5); }
+.dna-name { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
+.radar-wrap { display: grid; place-items: center; padding: var(--s2) 0 var(--s4); }
+.radar { width: 260px; height: 260px; }
+.radar-axis { stroke: var(--border); stroke-width: 1; fill: none; }
+.radar-grid { stroke: var(--border); stroke-width: 1; fill: var(--surface); fill-opacity: 0.5; }
+.radar-shape { fill: var(--primary); fill-opacity: 0.25; stroke: var(--primary); stroke-width: 2; stroke-linejoin: round; transition: all 600ms var(--ease-out); }
+.radar-label { font-size: 11px; fill: var(--ink-muted); font-family: var(--font); font-weight: 600; }
+.dna-summary {
+  background: var(--primary-soft);
+  padding: var(--s4);
+  border-radius: var(--r-md);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink-2);
+  margin: 0 var(--s4) var(--s5);
+}
+.dna-summary em { font-family: var(--font-display); font-style: normal; color: var(--primary); }
+.slider-group { padding: 0 var(--s4); margin-bottom: var(--s5); }
+.slider-row { margin-bottom: var(--s5); }
+.slider-row label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: var(--s2);
+}
+.slider-row label span:last-child { color: var(--ink-muted); font-weight: 500; }
+.slider {
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+}
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--primary);
+  border: 3px solid var(--surface);
+  box-shadow: var(--shadow-sm);
+  cursor: grab;
+}
+.slider::-moz-range-thumb {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--primary);
+  border: 3px solid var(--surface);
+  box-shadow: var(--shadow-sm);
+  cursor: grab;
+}
+
+/* ── Diet / settings ─────────────────────────────────── */
+.section-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+  padding: var(--s3) var(--s4) var(--s2);
+}
+.diet-chips { display: flex; flex-wrap: wrap; gap: var(--s2); padding: 0 var(--s4); margin-bottom: var(--s5); }
+.diet-chip {
+  padding: 8px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-full);
+  font-size: 13px;
+  color: var(--ink-muted);
+  font-weight: 600;
+}
+.diet-chip.on { background: var(--primary); border-color: var(--primary); color: white; }
+
+/* ── Saved list ──────────────────────────────────────── */
+.saved-list { display: flex; flex-direction: column; gap: var(--s2); padding: var(--s3) var(--s4); }
+.saved-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s3);
+  background: var(--surface);
+  border-radius: var(--r-md);
+  border: 1px solid var(--border-light);
+  transition: transform var(--d-fast);
+  cursor: pointer;
+}
+.saved-row:active { transform: scale(0.98); }
+.saved-thumb { width: 64px; height: 64px; border-radius: var(--r-sm); background-size: cover; background-position: center; flex-shrink: 0; background-color: var(--bg-2); }
+.saved-info { flex: 1; min-width: 0; }
+.saved-name { font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.saved-cuisine { font-size: 13px; color: var(--ink-muted); }
+.empty {
+  text-align: center;
+  padding: var(--s8) var(--s4);
+  color: var(--ink-muted);
+}
+.empty-icon { font-size: 40px; margin-bottom: var(--s4); opacity: 0.3; }
+
+/* ── Group ───────────────────────────────────────────── */
+.group-card {
+  background: var(--surface);
+  border-radius: var(--r-md);
+  border: 1px solid var(--border-light);
+  padding: var(--s6) var(--s5);
+  text-align: center;
+  margin: 0 var(--s4) var(--s3);
+}
+.group-code {
+  font-family: var(--font);
+  font-size: 42px;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  color: var(--primary);
+  margin: var(--s3) 0;
+}
+.group-input {
+  width: 100%;
+  height: 60px;
+  font-size: 28px;
+  font-weight: 800;
+  text-align: center;
+  letter-spacing: 0.15em;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  text-transform: uppercase;
+}
+.group-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow); outline: none; }
+.group-status { display: flex; align-items: center; gap: 8px; justify-content: center; padding: var(--s4); color: var(--success); font-size: 14px; font-weight: 600; }
+.live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); animation: pulse 2s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.3); } }
+
+/* ── Settings ────────────────────────────────────────── */
+.settings-group { margin-bottom: var(--s5); padding: 0 var(--s4); }
+.settings-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  color: var(--ink-soft);
+  padding: var(--s4) 0 var(--s2);
+}
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--s4);
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--r-md);
+  margin-bottom: var(--s2);
+  font-weight: 500;
+}
+.toggle {
+  width: 48px; height: 28px;
+  background: var(--border);
+  border-radius: 14px;
+  position: relative;
+  transition: background var(--d-fast);
+}
+.toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 24px; height: 24px;
+  background: white;
+  border-radius: 50%;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--d-fast) var(--ease-out);
+}
+.toggle.on { background: var(--primary); }
+.toggle.on::after { transform: translateX(20px); }
+.danger { color: var(--danger); }
+
+/* ── Toast ───────────────────────────────────────────── */
+.toast {
+  position: fixed;
+  bottom: calc(var(--tab-h) + 16px);
+  left: 50%;
+  transform: translateX(-50%) translateY(16px);
+  background: var(--ink);
+  color: white;
+  padding: 10px 20px;
+  border-radius: var(--r-full);
+  font-size: 14px;
+  font-weight: 600;
+  opacity: 0;
+  transition: all var(--d-base) var(--ease-out);
+  pointer-events: none;
+  z-index: 100;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── Modal ───────────────────────────────────────────── */
+.modal-bg {
+  position: fixed;
+  inset: 0;
+  background: rgba(12, 27, 42, 0.5);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: var(--s4);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--d-base);
+}
+.modal-bg.show { opacity: 1; pointer-events: all; }
+.modal {
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  padding: var(--s6) var(--s5);
+  max-width: 360px;
+  width: 100%;
+  text-align: center;
+  transform: translateY(16px);
+  transition: transform var(--d-base) var(--ease-out);
+  box-shadow: var(--shadow-xl);
+}
+.modal-bg.show .modal { transform: translateY(0); }
+.modal h3 { font-size: 20px; font-weight: 700; margin-bottom: var(--s2); letter-spacing: -0.02em; }
+.modal p { color: var(--ink-muted); font-size: 14px; margin-bottom: var(--s5); }
+
+/* ── Skeleton ────────────────────────────────────────── */
+.skel {
+  background: linear-gradient(90deg, var(--bg-2), var(--border-light), var(--bg-2));
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+  border-radius: var(--r-md);
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Reduced motion ──────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <main id="view"></main>
+  <nav class="tab-bar" id="tabBar">
+    <button class="tab active" data-tab="home">
+      <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1h-2z"/></svg>
+      <span>Home</span>
+    </button>
+    <button class="tab" data-tab="swipe">
+      <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0l-4-4m4 4l-4 4M5 13l4 4m-4-4l4-4"/></svg>
+      <span>Decide</span>
+    </button>
+    <button class="tab" data-tab="saved">
+      <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 4a1 1 0 011-1h12a1 1 0 011 1v17l-7-4-7 4V4z"/></svg>
+      <span>Saved</span>
+    </button>
+    <button class="tab" data-tab="dna">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" /><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
+      <span>Profile</span>
+    </button>
+  </nav>
+</div>
+<div id="toast" class="toast"></div>
+<div id="modal-bg" class="modal-bg"><div id="modal" class="modal"></div></div>
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════════════════
+const Config = {
+  WORKER_URL: location.hostname === 'localhost'
+    ? 'http://localhost:8787'
+    : 'https://bite-worker.schuette-markus.workers.dev',
+  MIN_RATING: 4.0,
+  SWIPE_LIMIT: 7,
+  REPEAT_COOLDOWN_DAYS: 14,
+  LOCATION_TTL_MS: 30 * 60 * 1000,
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// STORAGE
+// ═══════════════════════════════════════════════════════════════════
+const Storage = {
+  get(key, fallback) {
+    try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
+    catch { return fallback; }
+  },
+  set(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} },
+  del(key) { try { localStorage.removeItem(key); } catch {} },
+  wipe() {
+    Object.keys(localStorage).filter(k => k.startsWith('bite.')).forEach(k => localStorage.removeItem(k));
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// DEFAULT TASTE DNA
+// ═══════════════════════════════════════════════════════════════════
+const DEFAULT_DNA = () => ({
+  cuisines: { italian: 0.5, japanese: 0.5, mexican: 0.5, american: 0.5, mediterranean: 0.5, thai: 0.5, indian: 0.5, chinese: 0.5, cafe: 0.5, other: 0.5 },
+  priceRange: [1, 3],
+  diet: [],
+  adventurousness: 0.5,
+  maxDistance: 3.0,
+  recentVisits: [],
+  saved: [],
+  matchHistory: []
+});
+
+const DNA = {
+  load() { return Storage.get('bite.dna', DEFAULT_DNA()); },
+  save(dna) { Storage.set('bite.dna', dna); },
+  bumpCuisine(category, action) {
+    const dna = DNA.load();
+    const current = dna.cuisines[category] ?? 0.5;
+    const delta = action === 'right' ? 0.1 : action === 'left' ? -0.05 : action === 'save' ? 0.05 : 0;
+    dna.cuisines[category] = Math.max(0, Math.min(1, current + delta));
+    DNA.save(dna);
+  },
+  recordVisit(restaurantId) {
+    const dna = DNA.load();
+    dna.recentVisits = [{ id: restaurantId, t: Date.now() }, ...dna.recentVisits.filter(v => v.id !== restaurantId)].slice(0, 50);
+    DNA.save(dna);
+  },
+  toggleSaved(restaurant) {
+    const dna = DNA.load();
+    const exists = dna.saved.find(r => r.id === restaurant.id);
+    if (exists) {
+      dna.saved = dna.saved.filter(r => r.id !== restaurant.id);
+    } else {
+      dna.saved = [restaurant, ...dna.saved].slice(0, 100);
+    }
+    DNA.save(dna);
+    return !exists;
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// API CLIENT
+// ═══════════════════════════════════════════════════════════════════
+const API = {
+  async _fetch(path, opts = {}) {
+    const url = path.startsWith('http') ? path : Config.WORKER_URL + path;
+    const res = await fetch(url, opts);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Network error' }));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    return res.json();
+  },
+  async nearby(lat, lng, radius = 5000) {
+    return this._fetch(`/api/nearby?lat=${lat}&lng=${lng}&radius=${radius}`);
+  },
+  async place(id) {
+    return this._fetch(`/api/place/${encodeURIComponent(id)}`);
+  },
+  async geocode(zip) {
+    return this._fetch(`/api/geocode?zip=${encodeURIComponent(zip)}`);
+  },
+  async reverseGeocode(lat, lng) {
+    return this._fetch(`/api/reverse-geocode?lat=${lat}&lng=${lng}`);
+  },
+  imageUrl(path) {
+    if (!path) return null;
+    if (path.startsWith('http')) return path;
+    return Config.WORKER_URL + path;
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// LOCATION
+// ═══════════════════════════════════════════════════════════════════
+const Location = {
+  current: null,
+  load() {
+    const cached = Storage.get('bite.location');
+    if (cached && Date.now() - cached.timestamp < Config.LOCATION_TTL_MS) {
+      this.current = cached;
+      return cached;
+    }
+    return null;
+  },
+  save(loc) {
+    this.current = { ...loc, timestamp: Date.now() };
+    Storage.set('bite.location', this.current);
+  },
+  async getFromBrowser() {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) return reject(new Error('Geolocation unavailable'));
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const loc = {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            accuracy: pos.coords.accuracy,
+            source: 'gps',
+            neighborhood: null
+          };
+          try {
+            const rev = await API.reverseGeocode(loc.lat, loc.lng);
+            loc.neighborhood = rev.neighborhood || rev.city;
+            loc.region = rev.region;
+          } catch {}
+          this.save(loc);
+          resolve(loc);
+        },
+        (err) => reject(err),
+        { enableHighAccuracy: false, maximumAge: 600000, timeout: 8000 }
+      );
+    });
+  },
+  async getFromZip(zip) {
+    const data = await API.geocode(zip);
+    const loc = {
+      lat: data.lat,
+      lng: data.lng,
+      source: 'manual',
+      neighborhood: data.neighborhood,
+      formatted: data.formatted
+    };
+    this.save(loc);
+    return loc;
+  },
+  clear() { this.current = null; Storage.del('bite.location'); }
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// RESTAURANT POOL
+// ═══════════════════════════════════════════════════════════════════
+const Pool = {
+  cache: null,
+  cacheKey: null,
+  async fetch(loc) {
+    const key = `${loc.lat.toFixed(3)}:${loc.lng.toFixed(3)}`;
+    if (this.cacheKey === key && this.cache) return this.cache;
+    const data = await API.nearby(loc.lat, loc.lng);
+    this.cache = data.restaurants;
+    this.cacheKey = key;
+    return this.cache;
+  },
+  clear() { this.cache = null; this.cacheKey = null; }
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// RECOMMEND
+// ═══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+// CONTEXT ENGINE — time, season, weather, holidays
+// ═══════════════════════════════════════════════════════════════════
+function getContext() {
+  const now = new Date();
+  const hour = now.getHours();
+  const month = now.getMonth(); // 0-11
+  const day = now.getDate();
+  const dayOfWeek = now.getDay(); // 0=Sun
+
+  // Meal period
+  let meal = 'dinner';
+  if (hour < 6) meal = 'latenight';
+  else if (hour < 11) meal = 'breakfast';
+  else if (hour < 14) meal = 'lunch';
+  else if (hour < 17) meal = 'afternoon';
+  else if (hour < 21) meal = 'dinner';
+  else meal = 'latenight';
+
+  // Season (Northern Hemisphere)
+  let season = 'spring';
+  if (month >= 5 && month <= 7) season = 'summer';
+  else if (month >= 8 && month <= 10) season = 'fall';
+  else if (month >= 11 || month <= 1) season = 'winter';
+
+  // Rough temperature estimate from season + time
+  const tempBase = { spring: 62, summer: 80, fall: 55, winter: 40 };
+  const tempMod = hour >= 10 && hour <= 16 ? 8 : -5;
+  const temp = tempBase[season] + tempMod;
+  const isCold = temp < 50;
+  const isHot = temp > 80;
+
+  // Weekend
+  const isWeekend = dayOfWeek === 0 || dayOfWeek === 5 || dayOfWeek === 6;
+
+  // Holiday detection (US-centric, approximate)
+  let isHoliday = false;
+  let holidayName = null;
+  // New Year's
+  if (month === 0 && day === 1) { isHoliday = true; holidayName = 'New Year'; }
+  // Valentine's
+  if (month === 1 && day === 14) { isHoliday = true; holidayName = 'Valentine\'s Day'; }
+  // 4th of July
+  if (month === 6 && day === 4) { isHoliday = true; holidayName = 'July 4th'; }
+  // Halloween
+  if (month === 9 && day === 31) { isHoliday = true; holidayName = 'Halloween'; }
+  // Thanksgiving (4th Thursday of Nov)
+  if (month === 10 && dayOfWeek === 4 && day >= 22 && day <= 28) { isHoliday = true; holidayName = 'Thanksgiving'; }
+  // Christmas
+  if (month === 11 && (day === 24 || day === 25)) { isHoliday = true; holidayName = 'Christmas'; }
+  // Cinco de Mayo
+  if (month === 4 && day === 5) { isHoliday = true; holidayName = 'Cinco de Mayo'; }
+
+  return { hour, meal, season, temp, isCold, isHot, isWeekend, isHoliday, holidayName, month, dayOfWeek };
+}
+
+function recommend(mode, candidates, dna, opts = {}) {
+  const ctx = getContext();
+  const recentIds = new Set(
+    dna.recentVisits
+      .filter(v => Date.now() - v.t < Config.REPEAT_COOLDOWN_DAYS * 86400000)
+      .map(v => v.id)
+  );
+  const savedIds = new Set((dna.saved || []).map(s => s.id));
+
+  let pool = candidates.filter(r =>
+    r.rating >= Config.MIN_RATING &&
+    (r.openNow !== false) &&
+    (r.distance == null || r.distance <= dna.maxDistance) &&
+    r.priceLevel >= dna.priceRange[0] &&
+    r.priceLevel <= dna.priceRange[1] &&
+    !recentIds.has(r.id)
+  );
+
+  pool = pool.map(r => {
+    let score = 0;
+    const tags = (r.tags || []).map(t => t.toLowerCase()).join(' ');
+    const cuisine = (r.cuisineCategory || '').toLowerCase();
+    const cuisinePref = dna.cuisines[r.cuisineCategory] ?? 0.5;
+
+    // ── Core signals (50 pts) ──
+    score += cuisinePref * 25;                                       // taste DNA match
+    score += (r.distance != null ? (1 - r.distance / Math.max(dna.maxDistance, 1)) : 0.5) * 15; // proximity
+    score += (1 - Math.abs(r.priceLevel - (dna.priceRange[0] + dna.priceRange[1]) / 2) / 2) * 10; // price fit
+    score += (r.rating >= 4.5 ? 5 : r.rating >= 4.2 ? 3 : 0);       // quality bonus
+    if (savedIds.has(r.id)) score += 4;                              // previously saved = signal of interest
+
+    // ── Meal period (12 pts) ──
+    if (ctx.meal === 'breakfast' && /breakfast|brunch|coffee|bakery|cafe|bagel|pancake/i.test(tags + ' ' + cuisine)) score += 12;
+    if (ctx.meal === 'lunch' && /lunch|deli|sandwich|salad|bowl|quick/i.test(tags + ' ' + cuisine)) score += 8;
+    if (ctx.meal === 'afternoon' && /cafe|coffee|tea|dessert|bakery|bubble/i.test(tags + ' ' + cuisine)) score += 10;
+    if (ctx.meal === 'dinner' && /dinner|steakhouse|italian|japanese|thai|indian|fine/i.test(tags + ' ' + cuisine)) score += 8;
+    if (ctx.meal === 'latenight' && /late|bar|pizza|ramen|taco|24|diner/i.test(tags + ' ' + cuisine)) score += 12;
+
+    // ── Weather / temperature (8 pts) ──
+    if (ctx.isCold && /ramen|soup|pho|stew|curry|comfort|warm|cozy|hot pot/i.test(tags + ' ' + cuisine)) score += 8;
+    if (ctx.isHot && /ice cream|poke|salad|smoothie|acai|cold|fresh|sushi/i.test(tags + ' ' + cuisine)) score += 8;
+
+    // ── Season (6 pts) ──
+    if (ctx.season === 'summer' && /outdoor|patio|bbq|grill|seafood|tropical/i.test(tags)) score += 6;
+    if (ctx.season === 'fall' && /harvest|pumpkin|warm|cozy|soup|comfort/i.test(tags)) score += 6;
+    if (ctx.season === 'winter' && /comfort|warm|stew|hearty|hot|cozy/i.test(tags)) score += 6;
+    if (ctx.season === 'spring' && /fresh|garden|light|brunch|outdoor/i.test(tags)) score += 6;
+
+    // ── Weekend boost (5 pts) ──
+    if (ctx.isWeekend) {
+      if (/brunch|mimosa|breakfast|bakery/i.test(tags) && ctx.meal === 'breakfast') score += 5;
+      if (r.priceLevel >= 3) score += 3; // more willing to splurge on weekends
+    }
+
+    // ── Holiday boost (8 pts) ──
+    if (ctx.isHoliday) {
+      if (ctx.holidayName === 'Valentine\'s Day' && (r.priceLevel >= 3 || /romantic|italian|french|wine/i.test(tags + ' ' + cuisine))) score += 8;
+      if (ctx.holidayName === 'Cinco de Mayo' && /mexican|taco|burrito|margarita/i.test(tags + ' ' + cuisine)) score += 8;
+      if (ctx.holidayName === 'Thanksgiving' && /american|comfort|turkey|traditional/i.test(tags + ' ' + cuisine)) score += 6;
+      if (ctx.holidayName === 'Christmas' && /cozy|warm|fine|special/i.test(tags)) score += 5;
+      if (ctx.holidayName === 'July 4th' && /bbq|grill|american|burger|hot dog/i.test(tags + ' ' + cuisine)) score += 8;
+    }
+
+    // ── Mode bias (10 pts) ──
+    if (mode === 'familiar' && cuisinePref > 0.6) score += 10;
+    if (mode === 'new' && cuisinePref < 0.4) score += 10;
+    if (mode === 'surprise') score += (Math.random() - 0.5) * 20;
+
+    return { ...r, _score: score, _ctx: ctx };
+  });
+
+  pool.sort((a, b) => b._score - a._score);
+  if (opts.topN) return pool.slice(0, opts.topN);
+  return pool[0] || null;
+}
+
+function whyReasons(restaurant, dna) {
+  const reasons = [];
+  const ctx = getContext();
+  if (restaurant.distance != null && restaurant.distance < 1) reasons.push(`${restaurant.distance} mi away`);
+  else if (restaurant.distance != null) reasons.push(`~${restaurant.travelTimeMin || Math.round(restaurant.distance * 3)} min away`);
+  if (restaurant.openNow) reasons.push('Open now');
+  if (restaurant.rating >= 4.5) reasons.push(`${restaurant.rating} stars`);
+  const cuisineLove = dna.cuisines[restaurant.cuisineCategory];
+  if (cuisineLove > 0.7) reasons.push(`You love ${restaurant.cuisine.toLowerCase()}`);
+  // Contextual reasons
+  if (ctx.meal === 'breakfast') reasons.push('Great for breakfast');
+  else if (ctx.meal === 'latenight') reasons.push('Open late');
+  if (ctx.isCold) reasons.push('Perfect for cold weather');
+  if (ctx.isHot) reasons.push('Refreshing choice');
+  if (ctx.isWeekend && ctx.meal === 'breakfast') reasons.push('Weekend brunch pick');
+  if (ctx.isHoliday && ctx.holidayName) reasons.push(`${ctx.holidayName} pick`);
+  return reasons.slice(0, 4);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// AI CUISINE ANALYSIS — generates a smart description from available data
+// ═══════════════════════════════════════════════════════════════════
+function generateAIAnalysis(r) {
+  const parts = [];
+
+  // Cuisine & vibe
+  const cuisineName = r.cuisine || r.cuisineCategory || 'restaurant';
+  const priceDesc = ['budget-friendly', 'affordable', 'mid-range', 'upscale'][Math.max(0, (r.priceLevel || 1) - 1)];
+
+  if (r.rating >= 4.5) {
+    parts.push(`Highly rated ${priceDesc} ${cuisineName.toLowerCase()} with ${r.reviewCount?.toLocaleString() || 'many'} reviews.`);
+  } else {
+    parts.push(`Popular ${priceDesc} ${cuisineName.toLowerCase()} spot with a ${r.rating?.toFixed(1)} rating.`);
+  }
+
+  // Services
+  const services = [];
+  if (r.dineIn) services.push('dine-in');
+  if (r.pickup) services.push('takeout');
+  if (r.delivery) services.push('delivery');
+  if (services.length) parts.push(`Offers ${services.join(', ')}.`);
+
+  // Tags / what to expect
+  if (r.tags?.length) {
+    const tagStr = r.tags.slice(0, 3).map(t => t.toLowerCase()).join(', ');
+    parts.push(`Known for: ${tagStr}.`);
+  }
+
+  // Distance context
+  if (r.distance != null) {
+    if (r.distance < 0.3) parts.push('Very close — walkable.');
+    else if (r.distance < 1) parts.push(`Short trip — ${r.distance} mi away.`);
+    else parts.push(`${r.distance} mi away, about a ${r.travelTimeMin || Math.round(r.distance * 3)} min drive.`);
+  }
+
+  return parts.join(' ');
+}
+
+function getMenuHighlights(r) {
+  const highlights = [];
+  const cat = (r.cuisineCategory || '').toLowerCase();
+  const cuisineMenus = {
+    italian: ['Pasta', 'Margherita Pizza', 'Risotto', 'Tiramisu', 'Bruschetta'],
+    japanese: ['Sushi Platter', 'Ramen', 'Gyoza', 'Tempura', 'Miso Soup'],
+    mexican: ['Tacos al Pastor', 'Burrito Bowl', 'Guacamole', 'Enchiladas', 'Churros'],
+    american: ['Classic Burger', 'Fries', 'Mac & Cheese', 'Wings', 'Milkshake'],
+    mediterranean: ['Hummus Platter', 'Falafel Wrap', 'Kebab Plate', 'Tabbouleh', 'Baklava'],
+    thai: ['Pad Thai', 'Green Curry', 'Tom Yum Soup', 'Mango Sticky Rice', 'Spring Rolls'],
+    indian: ['Butter Chicken', 'Naan Bread', 'Biryani', 'Samosa', 'Mango Lassi'],
+    chinese: ['Kung Pao Chicken', 'Dumplings', 'Lo Mein', 'Fried Rice', 'Hot & Sour Soup'],
+    cafe: ['Espresso', 'Avocado Toast', 'Acai Bowl', 'Croissant', 'Cold Brew'],
+  };
+  return cuisineMenus[cat] || ['Chef\'s Special', 'Daily Feature', 'House Favorite'];
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PLATFORM MAPS HELPER — opens native maps on iOS, Google Maps elsewhere
+// ═══════════════════════════════════════════════════════════════════
+function getMapsUrl(r) {
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (isIOS) {
+    if (r.lat && r.lng) return `maps://maps.apple.com/?q=${encodeURIComponent(r.name)}&ll=${r.lat},${r.lng}`;
+    return `maps://maps.apple.com/?q=${encodeURIComponent(r.name)}`;
+  }
+  return r.mapsUrl || `https://maps.google.com/?q=${r.lat},${r.lng}`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// HAPTICS
+// ═══════════════════════════════════════════════════════════════════
+const Haptics = {
+  enabled: true,
+  buzz(pattern) {
+    if (!this.enabled || !navigator.vibrate) return;
+    try { navigator.vibrate(pattern); } catch {}
+  },
+  light() { this.buzz(10); },
+  medium() { this.buzz(20); },
+  match() { this.buzz([20, 60, 30]); }
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// TOAST & MODAL
+// ═══════════════════════════════════════════════════════════════════
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => el.classList.remove('show'), 1800);
+}
+
+function showModal(title, body, actions) {
+  const bg = document.getElementById('modal-bg');
+  const m = document.getElementById('modal');
+  m.innerHTML = `
+    <h3>${title}</h3>
+    <p>${body}</p>
+    <div style="display:flex; flex-direction:column; gap:8px;">
+      ${actions.map((a, i) =>
+        `<button data-i="${i}" style="height:48px; ${a.primary ? 'background:var(--primary); color:white; border-radius:var(--r-md);' : 'color:var(--ink-muted);'} font-weight:600; font-size:14px;">${a.label}</button>`
+      ).join('')}
+    </div>
+  `;
+  bg.classList.add('show');
+  m.querySelectorAll('button').forEach(b => b.onclick = () => {
+    bg.classList.remove('show');
+    actions[parseInt(b.dataset.i)].onClick?.();
+  });
+  bg.onclick = (e) => { if (e.target === bg) bg.classList.remove('show'); };
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ROUTER
+// ═══════════════════════════════════════════════════════════════════
+const Router = {
+  _onChange: null,
+  go(hash) { location.hash = hash; },
+  current() {
+    const h = location.hash.slice(1) || 'home';
+    const [path, ...params] = h.split('/');
+    return { path, params };
+  },
+  init(onChange) {
+    this._onChange = onChange;
+    window.addEventListener('hashchange', () => onChange(this.current()));
+    onChange(this.current());
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// SVG ICONS
+// ═══════════════════════════════════════════════════════════════════
+const Icons = {
+  back: `<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>`,
+  close: `<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><line x1="7" y1="7" x2="17" y2="17"/><line x1="17" y1="7" x2="7" y2="17"/></svg>`,
+  pin: `<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s-7-5.3-7-11a7 7 0 1114 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="11" r="2.5"/></svg>`,
+  chevron: `<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>`,
+  heart: `<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.5-9-9c-1.2-3 .3-6.5 3.5-6.5 1.8 0 3.2.8 4 2.2 0 0 1.4-2.2 3.5-2.2 3 0 5 3.5 3.5 6.5-2 4.5-9 9-9 9z"/></svg>`,
+  bookmark: `<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4a1 1 0 011-1h12a1 1 0 011 1v17l-7-4-7 4V4z"/></svg>`,
+  check: `<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12.5l3 3 5-6"/></svg>`,
+  x: `<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><line x1="7" y1="7" x2="17" y2="17"/><line x1="17" y1="7" x2="7" y2="17"/></svg>`,
+  search: `<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>`,
+  sparkle: `<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/></svg>`,
+  zap: `<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
+  map: `<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l6-3 6 3 6-3v13l-6 3-6-3-6 3V7z"/><path d="M9 4v13M15 7v13"/></svg>`,
+  phone: `<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6A19.79 19.79 0 012.12 4.18 2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.362 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>`,
+  truck: `<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3h15v13H1zM16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>`,
+};
+
+// Chomping jaw logo — open jaw eating the word "bite."
+const LogoSVG = `<svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;">
+  <path d="M4 10C4 5 8 3 13 3" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M4 18C4 23 8 25 13 25" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M13 3l9 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <path d="M13 25l9-7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="9" cy="10" r="1.2" fill="currentColor"/>
+</svg>`;
+
+// ═══════════════════════════════════════════════════════════════════
+// VIEWS
+// ═══════════════════════════════════════════════════════════════════
+const App = {
+  state: {
+    swipeStack: [],
+    swipeIndex: 0,
+    activeMatch: null,
+    selectedMood: null,
+    groupCode: null,
+    expandedCard: null,
+    searchQuery: '',
+  },
+
+  el() { return document.getElementById('view'); },
+
+  header(loc) {
+    const locLabel = loc?.neighborhood
+      ? `${loc.neighborhood}${loc.region ? ', ' + loc.region : ''}`
+      : 'Set location';
+    return `
+      <div class="header">
+        <div class="header-logo">
+          <span style="color:var(--primary);">${LogoSVG}</span>
+          <span>bite<span style="color:var(--accent);">.</span></span>
+        </div>
+        <button class="header-loc" id="locChip">
+          ${Icons.pin}
+          <span>${locLabel}</span>
+        </button>
+      </div>
+    `;
+  },
+
+  subHeader(title, backTo) {
+    return `
+      <div class="header">
+        <button style="width:36px;height:36px;display:grid;place-items:center;border-radius:50%;background:var(--bg-2);" onclick="Router.go('${backTo || 'home'}')">${Icons.back}</button>
+        <span style="font-size:17px;font-weight:700;flex:1;text-align:center;margin-right:36px;">${title}</span>
+      </div>
+    `;
+  },
+
+  updateTabs(active) {
+    document.querySelectorAll('.tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.tab === active);
+    });
+  },
+
+  async render({ path, params }) {
+    const v = this.el();
+    switch (path) {
+      case 'home':    this.updateTabs('home'); return this.renderHome(v);
+      case 'swipe':   this.updateTabs('swipe'); return this.renderSwipe(v);
+      case 'match':   this.updateTabs('home'); return this.renderMatch(v, params[0]);
+      case 'dna':     this.updateTabs('dna'); return this.renderDNA(v);
+      case 'saved':   this.updateTabs('saved'); return this.renderSaved(v);
+      case 'group':   this.updateTabs('home'); return this.renderGroup(v, params[0]);
+      case 'settings':this.updateTabs('dna'); return this.renderSettings(v);
+      case 'privacy': this.updateTabs('dna'); return this.renderAdmin(v, 'privacy');
+      case 'cookies': this.updateTabs('dna'); return this.renderAdmin(v, 'cookies');
+      case 'terms':   this.updateTabs('dna'); return this.renderAdmin(v, 'terms');
+      case 'faq':     this.updateTabs('dna'); return this.renderAdmin(v, 'faq');
+      case 'health':  this.updateTabs('dna'); return this.renderHealth(v);
+      default:        this.updateTabs('home'); Router.go('home');
+    }
+  },
+
+  // ─── Home ────────────────────────────────────────────────────────
+  async renderHome(v) {
+    const loc = Location.load();
+    const dna = DNA.load();
+
+    if (!loc) {
+      v.innerHTML = `
+        ${this.header(null)}
+        <div class="view">
+          <div class="primer">
+            <div class="primer-icon">${Icons.pin}</div>
+            <h2>Find great food nearby</h2>
+            <p>Bite uses your location to surface the best restaurants around you. We never store it.</p>
+            <button class="btn-primary" id="useLocBtn">Use my location</button>
+            <button class="btn-link" id="zipToggle">Enter a ZIP code instead</button>
+            <div id="zipForm" style="display:none">
+              <input class="zip-input" id="zipInput" placeholder="ZIP code" maxlength="10" autocomplete="postal-code" />
+              <button class="btn-primary" id="zipGo" style="margin-top:12px">Find restaurants</button>
+            </div>
+          </div>
+        </div>
+      `;
+      document.getElementById('useLocBtn').onclick = async () => {
+        Haptics.medium();
+        const btn = document.getElementById('useLocBtn');
+        btn.textContent = 'Locating...';
+        btn.disabled = true;
+        try {
+          await Location.getFromBrowser();
+          this.renderHome(v);
+        } catch {
+          btn.textContent = 'Use my location';
+          btn.disabled = false;
+          toast('Permission denied. Try a ZIP code.');
+          document.getElementById('zipToggle').click();
+        }
+      };
+      document.getElementById('zipToggle').onclick = () => {
+        document.getElementById('zipForm').style.display = 'block';
+        document.getElementById('zipToggle').style.display = 'none';
+        document.getElementById('zipInput').focus();
+      };
+      document.getElementById('zipGo').onclick = async () => {
+        const zip = document.getElementById('zipInput').value.trim();
+        if (!zip) return;
+        Haptics.medium();
+        const btn = document.getElementById('zipGo');
+        btn.textContent = 'Looking up...';
+        btn.disabled = true;
+        try {
+          await Location.getFromZip(zip);
+          this.renderHome(v);
+        } catch {
+          btn.textContent = 'Find restaurants';
+          btn.disabled = false;
+          toast("Couldn't find that location.");
+        }
+      };
+      return;
+    }
+
+    // Show loading state
+    v.innerHTML = `
+      ${this.header(loc)}
+      <div class="view">
+        <div class="search-bar">
+          ${Icons.search}
+          <input type="text" placeholder="Search restaurants..." id="searchInput" />
+        </div>
+        <div class="cat-scroll" id="catChips">
+          ${['All', 'Italian', 'Japanese', 'Mexican', 'American', 'Thai', 'Indian', 'Chinese', 'Cafe'].map((c, i) => {
+            const emojis = ['🍽', '🍝', '🍱', '🌮', '🍔', '🍜', '🍛', '🥟', '☕'];
+            return `<button class="cat-chip ${i === 0 ? 'active' : ''}" data-cat="${c.toLowerCase()}"><span class="emoji">${emojis[i]}</span>${c}</button>`;
+          }).join('')}
+        </div>
+
+        <button class="decide-banner" id="decideBtn" style="margin-bottom:var(--s3);">
+          <div class="banner-icon">${Icons.zap}</div>
+          <div class="banner-text">
+            <h3>Decide for me</h3>
+            <p>One tap. The perfect pick, right now.</p>
+          </div>
+        </button>
+
+        <div id="topPick"></div>
+
+        <div class="section-hdr">
+          <h2>Near you</h2>
+        </div>
+
+        <div class="feed" id="feed">
+          <div class="skel" style="height:220px;"></div>
+          <div class="skel" style="height:220px;"></div>
+        </div>
+      </div>
+    `;
+
+    // Wire location chip
+    document.getElementById('locChip').onclick = () => {
+      showModal('Change location?', 'Bite will find restaurants near your new location.', [
+        { label: 'Use my location', primary: true, onClick: async () => { Location.clear(); Pool.clear(); this.renderHome(v); }},
+        { label: 'Enter a ZIP', onClick: () => { Location.clear(); this.renderHome(v); }},
+        { label: 'Cancel' }
+      ]);
+    };
+
+    // Wire decide button
+    document.getElementById('decideBtn').onclick = async () => {
+      Haptics.medium();
+      try {
+        const restaurants = await Pool.fetch(loc);
+        if (restaurants.length === 0) { toast('No 4-star spots nearby.'); return; }
+        const pick = recommend('surprise', restaurants, dna);
+        if (!pick) { toast('No matches. Try adjusting your profile.'); return; }
+        this.state.activeMatch = pick;
+        Router.go('match/' + pick.id);
+      } catch (err) {
+        toast(err.message || "Can't reach the kitchen.");
+      }
+    };
+
+    // Wire category chips
+    document.querySelectorAll('[data-cat]').forEach(el => {
+      el.onclick = () => {
+        document.querySelectorAll('[data-cat]').forEach(c => c.classList.remove('active'));
+        el.classList.add('active');
+        Haptics.light();
+        this.filterFeed(el.dataset.cat);
+      };
+    });
+
+    // Wire search
+    document.getElementById('searchInput').oninput = (e) => {
+      this.state.searchQuery = e.target.value.toLowerCase();
+      this.filterFeed(document.querySelector('[data-cat].active')?.dataset.cat || 'all');
+    };
+
+    // Fetch and render feed + top pick
+    try {
+      const restaurants = await Pool.fetch(loc);
+      this.state._allRestaurants = restaurants;
+
+      // Render AI top pick
+      const topPick = recommend('surprise', restaurants, dna);
+      if (topPick) {
+        const ctx = getContext();
+        const img = API.imageUrl(topPick.imagePath);
+        const pickEl = document.getElementById('topPick');
+        if (pickEl) {
+          pickEl.innerHTML = `
+            <div style="margin:0 var(--s4) var(--s4);">
+              <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink-soft);margin-bottom:var(--s2);display:flex;align-items:center;gap:6px;">
+                ${Icons.sparkle} Top pick for ${ctx.meal === 'breakfast' ? 'this morning' : ctx.meal === 'lunch' ? 'lunch' : ctx.meal === 'afternoon' ? 'this afternoon' : ctx.meal === 'latenight' ? 'tonight' : 'dinner'}
+              </div>
+              <div class="r-card" data-rid="${topPick.id}" style="border:2px solid var(--primary);cursor:pointer;" id="topPickCard">
+                ${img ? `<img class="r-card-img" src="${img}" alt="${topPick.name}" loading="lazy" style="height:140px;" />` : ''}
+                <div class="r-card-body">
+                  <div class="r-card-row">
+                    <div class="r-card-name">${topPick.name}</div>
+                    <div class="r-card-rating">
+                      <svg viewBox="0 0 12 12"><path d="M6 1l1.5 3.2 3.5.4-2.6 2.3.7 3.4L6 8.5 2.9 10.3l.7-3.4L1 4.6l3.5-.4z"/></svg>
+                      ${topPick.rating?.toFixed(1) || '—'}
+                    </div>
+                  </div>
+                  <div class="r-card-meta">
+                    <span>${topPick.cuisine || 'Restaurant'}</span><span class="dot"></span><span>${topPick.distance != null ? topPick.distance + ' mi' : 'Nearby'}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+          document.getElementById('topPickCard').onclick = () => {
+            this.state.activeMatch = topPick;
+            Router.go('match/' + topPick.id);
+          };
+        }
+      }
+
+      this.renderFeed(restaurants);
+    } catch (err) {
+      document.getElementById('feed').innerHTML = `
+        <div class="empty">
+          <div class="empty-icon">📡</div>
+          <p>${err.message || "Couldn't load restaurants."}</p>
+          <button class="btn-primary" style="max-width:200px;margin:16px auto 0;" onclick="App.renderHome(App.el())">Retry</button>
+        </div>
+      `;
+    }
+  },
+
+  filterFeed(cat) {
+    let filtered = this.state._allRestaurants || [];
+    if (cat && cat !== 'all') {
+      filtered = filtered.filter(r => (r.cuisineCategory || '').toLowerCase().includes(cat) || (r.cuisine || '').toLowerCase().includes(cat));
+    }
+    if (this.state.searchQuery) {
+      filtered = filtered.filter(r => (r.name || '').toLowerCase().includes(this.state.searchQuery) || (r.cuisine || '').toLowerCase().includes(this.state.searchQuery));
+    }
+    this.renderFeed(filtered);
+  },
+
+  renderFeed(restaurants) {
+    const feed = document.getElementById('feed');
+    if (!feed) return;
+    if (restaurants.length === 0) {
+      feed.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><p>No restaurants found.</p></div>`;
+      return;
+    }
+    feed.innerHTML = restaurants.map(r => {
+      const img = API.imageUrl(r.imagePath);
+      const isExpanded = this.state.expandedCard === r.id;
+      return `
+        <div class="r-card" data-rid="${r.id}">
+          ${img
+            ? `<img class="r-card-img" src="${img}" alt="${r.name}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='grid';" /><div class="r-card-img-placeholder" style="display:none;">${Icons.map}</div>`
+            : `<div class="r-card-img-placeholder">${Icons.map}</div>`
+          }
+          <div class="r-card-body">
+            <div class="r-card-row">
+              <div class="r-card-name">${r.name}</div>
+              <div class="r-card-rating">
+                <svg viewBox="0 0 12 12"><path d="M6 1l1.5 3.2 3.5.4-2.6 2.3.7 3.4L6 8.5 2.9 10.3l.7-3.4L1 4.6l3.5-.4z"/></svg>
+                ${r.rating?.toFixed(1) || '—'}
+              </div>
+            </div>
+            <div class="r-card-meta">
+              <span>${r.cuisine || 'Restaurant'}</span>
+              <span class="dot"></span>
+              <span>${'$'.repeat(Math.max(1, r.priceLevel || 1))}</span>
+              <span class="dot"></span>
+              <span>${r.distance != null ? r.distance + ' mi' : 'Nearby'}</span>
+            </div>
+            ${r.tags?.length ? `<div class="r-card-tags">${r.tags.slice(0,3).map(t => `<span class="r-card-tag">${t}</span>`).join('')}</div>` : ''}
+            <div class="r-card-status ${r.openNow ? 'open' : r.openNow === false ? 'closed' : ''}">
+              ${r.openNow === true ? '<span class="status-dot"></span> Open now' : r.openNow === false ? '<span class="status-dot"></span> Closed' : ''}
+            </div>
+          </div>
+          ${isExpanded ? this.expandedDetail(r) : ''}
+        </div>
+      `;
+    }).join('');
+
+    // Wire card clicks
+    feed.querySelectorAll('.r-card').forEach(card => {
+      card.onclick = (e) => {
+        if (e.target.closest('.r-detail-btn') || e.target.closest('a')) return;
+        const id = card.dataset.rid;
+        if (this.state.expandedCard === id) {
+          this.state.expandedCard = null;
+        } else {
+          this.state.expandedCard = id;
+        }
+        this.renderFeed(this.state._allRestaurants?.filter(r => {
+          const cat = document.querySelector('[data-cat].active')?.dataset.cat || 'all';
+          if (cat && cat !== 'all') {
+            if (!(r.cuisineCategory || '').toLowerCase().includes(cat) && !(r.cuisine || '').toLowerCase().includes(cat)) return false;
+          }
+          if (this.state.searchQuery) {
+            if (!(r.name || '').toLowerCase().includes(this.state.searchQuery) && !(r.cuisine || '').toLowerCase().includes(this.state.searchQuery)) return false;
+          }
+          return true;
+        }) || []);
+      };
+    });
+  },
+
+  expandedDetail(r) {
+    const analysis = generateAIAnalysis(r);
+    const menuItems = getMenuHighlights(r);
+    const mapsUrl = getMapsUrl(r);
+
+    return `
+      <div class="r-detail">
+        <div class="r-detail-section">
+          <div class="r-detail-ai">
+            <div class="ai-badge">${Icons.sparkle} AI Analysis</div>
+            <div>${analysis}</div>
+          </div>
+        </div>
+
+        <div class="r-detail-section">
+          <div class="r-detail-label">Popular items</div>
+          <div class="r-detail-pills">
+            ${menuItems.map((item, i) => `<span class="r-detail-pill ${i === 0 ? 'highlight' : ''}">${item}</span>`).join('')}
+          </div>
+        </div>
+
+        <div class="r-detail-section">
+          <div class="r-detail-label">Details</div>
+          <div class="r-detail-pills">
+            ${r.dineIn ? '<span class="r-detail-pill">Dine-in</span>' : ''}
+            ${r.pickup ? '<span class="r-detail-pill">Takeout</span>' : ''}
+            ${r.delivery ? '<span class="r-detail-pill">Delivery</span>' : ''}
+            <span class="r-detail-pill">${'$'.repeat(Math.max(1, r.priceLevel || 1))} price range</span>
+            ${r.reviewCount ? `<span class="r-detail-pill">${r.reviewCount.toLocaleString()} reviews</span>` : ''}
+          </div>
+        </div>
+
+        <div class="r-detail-actions">
+          <a class="r-detail-btn primary" href="${mapsUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()">
+            ${Icons.map} Directions
+          </a>
+          ${r.phone ? `<a class="r-detail-btn secondary" href="tel:${r.phone}" onclick="event.stopPropagation()">
+            ${Icons.phone} Call
+          </a>` : ''}
+          <button class="r-detail-btn secondary" onclick="event.stopPropagation(); App.saveFromFeed('${r.id}')">
+            ${Icons.bookmark} Save
+          </button>
+        </div>
+      </div>
+    `;
+  },
+
+  saveFromFeed(id) {
+    const r = (this.state._allRestaurants || []).find(x => x.id === id);
+    if (!r) return;
+    const added = DNA.toggleSaved(r);
+    Haptics.light();
+    toast(added ? 'Saved' : 'Removed from saved');
+  },
+
+  // ─── Swipe ───────────────────────────────────────────────────────
+  async startSwipe(mode) {
+    const loc = Location.load();
+    const dna = DNA.load();
+    if (!loc) return Router.go('home');
+    try {
+      const restaurants = await Pool.fetch(loc);
+      const top = recommend(mode, restaurants, dna, { topN: Config.SWIPE_LIMIT });
+      if (top.length === 0) { toast('No matches found. Try widening your range.'); return; }
+      this.state.swipeStack = top;
+      this.state.swipeIndex = 0;
+      Router.go('swipe');
+    } catch (err) {
+      toast(err.message || 'Could not load restaurants');
+    }
+  },
+
+  renderSwipe(v) {
+    const { swipeStack, swipeIndex } = this.state;
+    const loc = Location.load();
+
+    // Auto-start swipe session when entering Decide tab
+    if (swipeStack.length === 0 || swipeIndex >= swipeStack.length) {
+      if (!loc) return Router.go('home');
+      v.innerHTML = `
+        ${this.subHeader('Finding restaurants...', 'home')}
+        <div class="view" style="display:grid;place-items:center;min-height:60vh;">
+          <div class="skel" style="width:60px;height:60px;border-radius:50%;"></div>
+        </div>
+      `;
+      this.startSwipe('surprise');
+      return;
+    }
+
+    const r = swipeStack[swipeIndex];
+    const next = swipeStack[swipeIndex + 1];
+
+    v.innerHTML = `
+      ${this.subHeader(`${swipeIndex + 1} of ${Math.min(swipeStack.length, Config.SWIPE_LIMIT)}`, 'home')}
+      <div class="view swipe-shell">
+        <div class="stack-container" id="stack">
+          ${next ? this.cardHtml(next, true) : ''}
+          ${this.cardHtml(r, false)}
+        </div>
+        <div class="swipe-actions">
+          <button class="action-btn no" id="btn-no" data-tooltip="Pass">${Icons.x}</button>
+          <button class="action-btn save" id="btn-save" data-tooltip="Save">${Icons.bookmark}</button>
+          <button class="action-btn yes" id="btn-yes" data-tooltip="Let's go">${Icons.check}</button>
+        </div>
+        <div class="dots">
+          ${swipeStack.slice(0, Config.SWIPE_LIMIT).map((_, i) =>
+            `<span class="${i < swipeIndex ? 'done' : i === swipeIndex ? 'active' : ''}"></span>`
+          ).join('')}
+        </div>
+      </div>
+    `;
+
+    document.getElementById('btn-yes').onclick = () => this.swipeChoose('right');
+    document.getElementById('btn-no').onclick = () => this.swipeChoose('left');
+    document.getElementById('btn-save').onclick = () => this.swipeChoose('save');
+
+    this.attachSwipeGestures();
+  },
+
+  cardHtml(r, behind) {
+    const img = API.imageUrl(r.imagePath);
+    const transform = behind ? 'transform: scale(0.96) translateY(8px);' : '';
+    const opacity = behind ? 'opacity: 0.6;' : '';
+    return `
+      <div class="card" data-id="${r.id}" style="${transform} ${opacity}">
+        <div class="swipe-hint yes">Yes</div>
+        <div class="swipe-hint no">Pass</div>
+        <div class="card-photo" style="${img ? `background-image: url('${img}')` : 'background: linear-gradient(135deg, var(--primary-soft), var(--accent-soft))'}"></div>
+        <div class="card-body">
+          <div class="card-name">${r.name}</div>
+          <div class="card-meta">
+            <span>${r.cuisine}</span><span class="dot"></span><span>${'$'.repeat(Math.max(1, r.priceLevel))}</span><span class="dot"></span><span>${r.distance != null ? r.distance + ' mi' : 'nearby'}</span>
+          </div>
+          <div class="card-rating">${r.rating?.toFixed(1) || '—'} stars · ${r.reviewCount?.toLocaleString() || '0'} reviews</div>
+          ${r.tags?.length ? `<div class="card-tags">${r.tags.slice(0,3).map(t => `<span class="card-tag">${t}</span>`).join('')}</div>` : ''}
+        </div>
+      </div>
+    `;
+  },
+
+  attachSwipeGestures() {
+    const stack = document.getElementById('stack');
+    if (!stack) return;
+    const cards = stack.querySelectorAll('.card');
+    const top = cards[cards.length - 1];
+    if (!top) return;
+
+    let startX = 0, startY = 0, dx = 0, dy = 0, dragging = false;
+    const yesHint = top.querySelector('.swipe-hint.yes');
+    const noHint = top.querySelector('.swipe-hint.no');
+
+    const onStart = (x, y) => {
+      dragging = true;
+      startX = x; startY = y;
+      top.classList.add('dragging');
+      top.classList.remove('springing');
+    };
+    const onMove = (x, y) => {
+      if (!dragging) return;
+      dx = x - startX;
+      dy = y - startY;
+      const rotate = dx * 0.08;
+      top.style.transform = `translate(${dx}px, ${dy}px) rotate(${rotate}deg)`;
+      if (yesHint) yesHint.style.opacity = Math.min(1, dx / 80);
+      if (noHint) noHint.style.opacity = Math.min(1, -dx / 80);
+    };
+    const onEnd = () => {
+      if (!dragging) return;
+      dragging = false;
+      top.classList.remove('dragging');
+
+      if (dx > 80) {
+        this.swipeChoose('right');
+      } else if (dx < -80) {
+        this.swipeChoose('left');
+      } else if (dy < -80) {
+        this.swipeChoose('save');
+      } else {
+        top.classList.add('springing');
+        top.style.transform = '';
+        if (yesHint) yesHint.style.opacity = 0;
+        if (noHint) noHint.style.opacity = 0;
+      }
+    };
+
+    // Touch events
+    top.addEventListener('touchstart', (e) => {
+      const t = e.touches[0];
+      onStart(t.clientX, t.clientY);
+    }, { passive: true });
+    top.addEventListener('touchmove', (e) => {
+      const t = e.touches[0];
+      onMove(t.clientX, t.clientY);
+    }, { passive: true });
+    top.addEventListener('touchend', onEnd);
+
+    // Mouse events (desktop)
+    top.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'touch') return;
+      onStart(e.clientX, e.clientY);
+      top.setPointerCapture(e.pointerId);
+    });
+    top.addEventListener('pointermove', (e) => {
+      if (e.pointerType === 'touch') return;
+      onMove(e.clientX, e.clientY);
+    });
+    top.addEventListener('pointerup', (e) => {
+      if (e.pointerType === 'touch') return;
+      onEnd();
+    });
+  },
+
+  swipeChoose(dir) {
+    const stack = document.getElementById('stack');
+    if (!stack) return;
+    const cards = stack.querySelectorAll('.card');
+    const top = cards[cards.length - 1];
+    if (!top) return;
+
+    const r = this.state.swipeStack[this.state.swipeIndex];
+    if (!r) return;
+
+    if (dir === 'right') {
+      top.classList.add('flying-right');
+      Haptics.medium();
+      DNA.bumpCuisine(r.cuisineCategory, 'right');
+      DNA.recordVisit(r.id);
+      Group.broadcastSwipe(r.id, 'right');
+    } else if (dir === 'left') {
+      top.classList.add('flying-left');
+      Haptics.light();
+      DNA.bumpCuisine(r.cuisineCategory, 'left');
+      Group.broadcastSwipe(r.id, 'left');
+    } else if (dir === 'save') {
+      top.classList.add('flying-up');
+      Haptics.light();
+      DNA.toggleSaved(r);
+      DNA.bumpCuisine(r.cuisineCategory, 'save');
+      toast('Saved');
+    }
+
+    setTimeout(() => {
+      if (dir === 'right') {
+        Haptics.match();
+        this.state.activeMatch = r;
+        Router.go('match/' + r.id);
+      } else {
+        this.advanceSwipe();
+      }
+    }, 350);
+  },
+
+  advanceSwipe() {
+    this.state.swipeIndex++;
+    if (this.state.swipeIndex >= Math.min(this.state.swipeStack.length, Config.SWIPE_LIMIT)) {
+      toast('All done! Here are your matches.');
+      Router.go('home');
+    } else {
+      this.renderSwipe(this.el());
+    }
+  },
+
+  // ─── Match ───────────────────────────────────────────────────────
+  async renderMatch(v, id) {
+    let r = this.state.activeMatch;
+    if (!r || r.id !== id) {
+      const dna = DNA.load();
+      r = this.state.swipeStack?.find(x => x.id === id)
+        || (Pool.cache || []).find(x => x.id === id)
+        || dna.saved.find(x => x.id === id);
+    }
+    if (!r) return Router.go('home');
+
+    const dna = DNA.load();
+    const reasons = whyReasons(r, dna);
+    const img = API.imageUrl(r.imagePath);
+    const isSaved = dna.saved.some(s => s.id === r.id);
+    const mapsUrl = getMapsUrl(r);
+    const analysis = generateAIAnalysis(r);
+
+    v.innerHTML = `
+      ${this.subHeader('', 'home')}
+      <div class="view">
+        <div class="match">
+          <div class="match-photo" style="${img ? `background-image: url('${img}')` : 'background: linear-gradient(135deg, var(--primary-soft), var(--accent-soft))'}"></div>
+          <div class="match-body">
+            <div style="display:flex;align-items:start;justify-content:space-between;gap:12px;">
+              <div class="match-name">${r.name}</div>
+              <button id="saveToggle" data-tooltip="${isSaved ? 'Saved' : 'Save'}" style="flex-shrink:0;width:40px;height:40px;display:grid;place-items:center;border-radius:50%;background:var(--bg-2);">
+                ${isSaved ? Icons.heart.replace('fill="none"', `fill="var(--danger)" stroke="var(--danger)"`) : Icons.heart}
+              </button>
+            </div>
+            <div class="match-meta">${r.cuisine} · ${'$'.repeat(Math.max(1, r.priceLevel))} · ${r.distance != null ? r.distance + ' mi away' : 'nearby'} · ${r.rating?.toFixed(1) || '—'} stars</div>
+
+            <div class="r-detail-ai" style="margin:var(--s4) 0;">
+              <div class="ai-badge">${Icons.sparkle} AI Analysis</div>
+              <div>${analysis}</div>
+            </div>
+
+            ${reasons.length ? `
+              <div class="why-reasons">
+                ${reasons.map(t => `<span class="why-tag">${t}</span>`).join('')}
+              </div>
+            ` : ''}
+
+            <div class="match-actions" style="margin-top:var(--s4);">
+              ${mapsUrl ? `
+                <a class="match-action maps" href="${mapsUrl}" target="_blank" rel="noopener">
+                  <span class="act-icon">${Icons.map}</span><span>Directions</span><span class="act-arrow">→</span>
+                </a>` : ''}
+              ${r.delivery && r.doorDashUrl ? `
+                <a class="match-action delivery" href="${r.doorDashUrl}" target="_blank" rel="noopener">
+                  <span class="act-icon">${Icons.truck}</span><span>Delivery</span><span class="act-arrow">→</span>
+                </a>` : ''}
+              ${r.phone ? `
+                <a class="match-action call" href="tel:${r.phone}">
+                  <span class="act-icon">${Icons.phone}</span><span>Call</span><span class="act-arrow">→</span>
+                </a>` : ''}
+            </div>
+          </div>
+        </div>
+        <button class="dismiss-link" onclick="App.advanceFromMatch()">Not the one? See the next →</button>
+      </div>
+    `;
+
+    document.getElementById('saveToggle')?.addEventListener('click', () => {
+      const added = DNA.toggleSaved(r);
+      Haptics.light();
+      toast(added ? 'Saved' : 'Removed');
+      this.renderMatch(v, id);
+    });
+  },
+
+  advanceFromMatch() {
+    if (this.state.swipeStack.length && this.state.swipeIndex < this.state.swipeStack.length - 1) {
+      this.advanceSwipe();
+    } else {
+      Router.go('home');
+    }
+  },
+
+  // ─── Taste DNA ───────────────────────────────────────────────────
+  renderDNA(v) {
+    const dna = DNA.load();
+    const cats = ['italian', 'japanese', 'mexican', 'american', 'mediterranean', 'thai', 'indian', 'chinese'];
+    const labels = { italian: 'Italian', japanese: 'Japanese', mexican: 'Mexican', american: 'American', mediterranean: 'Med', thai: 'Thai', indian: 'Indian', chinese: 'East Asian' };
+
+    const cx = 130, cy = 130, R = 95;
+    const points = cats.map((c, i) => {
+      const angle = (i / cats.length) * 2 * Math.PI - Math.PI / 2;
+      const value = dna.cuisines[c] ?? 0.5;
+      return `${cx + Math.cos(angle) * R * value},${cy + Math.sin(angle) * R * value}`;
+    }).join(' ');
+
+    const rings = [0.33, 0.66, 1].map(r => {
+      const rp = cats.map((_, i) => {
+        const angle = (i / cats.length) * 2 * Math.PI - Math.PI / 2;
+        return `${cx + Math.cos(angle) * R * r},${cy + Math.sin(angle) * R * r}`;
+      }).join(' ');
+      return `<polygon points="${rp}" class="radar-grid" fill="none" />`;
+    }).join('');
+
+    const axes = cats.map((c, i) => {
+      const angle = (i / cats.length) * 2 * Math.PI - Math.PI / 2;
+      const x2 = cx + Math.cos(angle) * R;
+      const y2 = cy + Math.sin(angle) * R;
+      const lx = cx + Math.cos(angle) * (R + 18);
+      const ly = cy + Math.sin(angle) * (R + 18) + 4;
+      return `<line x1="${cx}" y1="${cy}" x2="${x2}" y2="${y2}" class="radar-axis" />
+              <text x="${lx}" y="${ly}" text-anchor="middle" class="radar-label">${labels[c]}</text>`;
+    }).join('');
+
+    const summary = this.summarizeDNA(dna);
+
+    v.innerHTML = `
+      ${this.subHeader('Your Taste', 'home')}
+      <div class="view" style="padding-bottom:24px;">
+        <div class="dna-header">
+          <div class="dna-name">Taste DNA</div>
+        </div>
+        <div class="radar-wrap">
+          <svg class="radar" viewBox="0 0 260 260">${rings}${axes}<polygon points="${points}" class="radar-shape" /></svg>
+        </div>
+        <div class="dna-summary">${summary}</div>
+        <div class="slider-group">
+          <div class="slider-row">
+            <label><span>Adventurousness</span><span id="advLabel">${this.advLabel(dna.adventurousness)}</span></label>
+            <input type="range" min="0" max="100" value="${dna.adventurousness * 100}" class="slider" id="advSlider" />
+          </div>
+          <div class="slider-row">
+            <label><span>Distance</span><span id="distLabel">${dna.maxDistance.toFixed(1)} mi</span></label>
+            <input type="range" min="5" max="100" value="${dna.maxDistance * 10}" class="slider" id="distSlider" />
+          </div>
+          <div class="slider-row">
+            <label><span>Price range</span><span id="priceLabel">${'$'.repeat(dna.priceRange[0])} – ${'$'.repeat(dna.priceRange[1])}</span></label>
+            <input type="range" min="1" max="4" value="${dna.priceRange[1]}" class="slider" id="priceMaxSlider" />
+          </div>
+        </div>
+        <div class="section-label">Diet</div>
+        <div class="diet-chips" id="diet">
+          ${['Vegetarian','Vegan','Gluten-free','Halal','Kosher','Pescatarian','Dairy-free'].map(d => {
+            const k = d.toLowerCase().replace(/[^a-z]/g, '');
+            const on = dna.diet.includes(k);
+            return `<button class="diet-chip ${on ? 'on' : ''}" data-diet="${k}">${d}</button>`;
+          }).join('')}
+        </div>
+        <div style="display:flex;justify-content:center;gap:var(--s4);padding:var(--s6) 0;">
+          <button onclick="Router.go('settings')" style="color:var(--ink-muted);font-size:14px;font-weight:600;">Settings</button>
+          <button onclick="Router.go('group')" style="color:var(--ink-muted);font-size:14px;font-weight:600;">Group</button>
+        </div>
+        <div style="text-align:center; color:var(--ink-soft); font-size:12px; padding:0 0 var(--s6);">
+          Stored on this device
+        </div>
+      </div>
+    `;
+
+    document.getElementById('advSlider').oninput = (e) => {
+      const d = DNA.load(); d.adventurousness = e.target.value / 100; DNA.save(d);
+      document.getElementById('advLabel').textContent = this.advLabel(d.adventurousness);
+    };
+    document.getElementById('distSlider').oninput = (e) => {
+      const d = DNA.load(); d.maxDistance = e.target.value / 10; DNA.save(d);
+      document.getElementById('distLabel').textContent = d.maxDistance.toFixed(1) + ' mi';
+    };
+    document.getElementById('priceMaxSlider').oninput = (e) => {
+      const d = DNA.load(); d.priceRange = [1, parseInt(e.target.value)]; DNA.save(d);
+      document.getElementById('priceLabel').textContent = '$'.repeat(d.priceRange[0]) + ' – ' + '$'.repeat(d.priceRange[1]);
+    };
+    document.querySelectorAll('[data-diet]').forEach(el => {
+      el.onclick = () => {
+        const k = el.dataset.diet;
+        const d = DNA.load();
+        if (d.diet.includes(k)) d.diet = d.diet.filter(x => x !== k);
+        else d.diet.push(k);
+        DNA.save(d);
+        el.classList.toggle('on');
+        Haptics.light();
+      };
+    });
+  },
+
+  advLabel(v) {
+    if (v < 0.3) return 'Reliable';
+    if (v < 0.7) return 'Balanced';
+    return 'Adventurous';
+  },
+
+  summarizeDNA(dna) {
+    const top = Object.entries(dna.cuisines)
+      .filter(([_, v]) => v > 0.55)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([k]) => k);
+    if (top.length === 0) return 'Bite is still learning what you like. Swipe a few rounds to fill in the picture.';
+    const intro = top.length === 1
+      ? `You tend to gravitate toward <em>${top[0]}</em>.`
+      : `You tend to gravitate toward <em>${top.slice(0, -1).join(', ')}</em> and <em>${top.at(-1)}</em>.`;
+    const advText = dna.adventurousness > 0.65 ? 'You like to explore.'
+                  : dna.adventurousness < 0.35 ? 'You stick to what you love.'
+                  : 'You balance the new with the familiar.';
+    return `${intro} ${advText}`;
+  },
+
+  // ─── Saved ───────────────────────────────────────────────────────
+  renderSaved(v) {
+    const dna = DNA.load();
+    v.innerHTML = `
+      ${this.subHeader('Saved', 'home')}
+      <div class="view">
+        ${dna.saved.length === 0 ? `
+          <div class="empty">
+            <div class="empty-icon">🔖</div>
+            <p>Places you save will appear here.</p>
+          </div>
+        ` : `
+          <div class="saved-list">
+            ${dna.saved.map(r => {
+              const img = API.imageUrl(r.imagePath);
+              return `
+                <button class="saved-row" data-id="${r.id}">
+                  <div class="saved-thumb" style="${img ? `background-image: url('${img}')` : ''}"></div>
+                  <div class="saved-info">
+                    <div class="saved-name">${r.name}</div>
+                    <div class="saved-cuisine">${r.cuisine} · ${r.distance != null ? r.distance + ' mi' : 'nearby'}</div>
+                  </div>
+                </button>
+              `;
+            }).join('')}
+          </div>
+        `}
+      </div>
+    `;
+    document.querySelectorAll('.saved-row').forEach(el => {
+      el.onclick = () => {
+        const r = dna.saved.find(s => s.id === el.dataset.id);
+        if (r) { this.state.activeMatch = r; Router.go('match/' + r.id); }
+      };
+    });
+  },
+
+  // ─── Group ───────────────────────────────────────────────────────
+  renderGroup(v, code) {
+    if (code) return this.renderGroupSession(v, code);
+
+    v.innerHTML = `
+      ${this.subHeader('Eat together', 'dna')}
+      <div class="view" style="padding:var(--s4);">
+        <div class="group-card">
+          <p style="color:var(--ink-muted); margin-bottom:8px; font-weight:600;">Create a session</p>
+          <p style="font-size:13px; color:var(--ink-soft); margin-bottom:16px;">Share the code. Both swipe. Mutual matches surface in real time.</p>
+          <button class="btn-primary" id="createBtn" style="width:100%;">Create code</button>
+        </div>
+        <div class="group-card">
+          <p style="color:var(--ink-muted); margin-bottom:16px; font-weight:600;">Or join one</p>
+          <input class="group-input" id="joinInput" maxlength="4" autocomplete="off" placeholder="CODE" />
+          <button class="btn-primary" id="joinBtn" style="width:100%;margin-top:12px;background:var(--ink);">Join</button>
+        </div>
+        <p style="text-align:center; color:var(--ink-soft); font-size:12px; margin-top:24px;">
+          V1: works between browser tabs on the same device.
+        </p>
+      </div>
+    `;
+    document.getElementById('createBtn').onclick = () => {
+      const newCode = Group.makeCode();
+      Group.start(newCode);
+      Router.go('group/' + newCode);
+    };
+    document.getElementById('joinBtn').onclick = () => {
+      const c = document.getElementById('joinInput').value.trim().toUpperCase();
+      if (c.length !== 4) { toast('Enter 4 characters'); return; }
+      Group.start(c);
+      Router.go('group/' + c);
+    };
+  },
+
+  async renderGroupSession(v, code) {
+    Group.start(code);
+    this.state.groupCode = code;
+    const loc = Location.load();
+    if (!loc) return Router.go('home');
+    const dna = DNA.load();
+    const restaurants = await Pool.fetch(loc);
+    const top = recommend('surprise', restaurants, dna, { topN: Config.SWIPE_LIMIT });
+
+    v.innerHTML = `
+      ${this.subHeader('Group', 'group')}
+      <div class="view" style="padding:var(--s4);">
+        <div style="text-align:center;">
+          <div class="group-code">${code}</div>
+          <div class="group-status"><span class="live-dot"></span><span id="groupStatus">Waiting for others...</span></div>
+          <p style="color:var(--ink-muted); font-size:13px; padding:0 16px 16px;">Share the code above. Mutual right-swipes show up here.</p>
+        </div>
+        <div id="mutualBox"></div>
+      </div>
+    `;
+
+    Group.onMatch = (restaurantId) => {
+      const r = top.find(x => x.id === restaurantId) || restaurants.find(x => x.id === restaurantId);
+      if (!r) return;
+      Haptics.match();
+      showModal('You both want this one', r.name, [
+        { label: 'See the place', primary: true, onClick: () => { this.state.activeMatch = r; Router.go('match/' + r.id); } },
+        { label: 'Keep swiping' }
+      ]);
+    };
+    Group.onPeerJoin = () => {
+      document.getElementById('groupStatus').textContent = 'Someone is here. Start swiping.';
+      this.state.swipeStack = top;
+      this.state.swipeIndex = 0;
+      setTimeout(() => Router.go('swipe'), 800);
+    };
+  },
+
+  // ─── Settings ────────────────────────────────────────────────────
+  renderSettings(v) {
+    v.innerHTML = `
+      ${this.subHeader('Settings', 'dna')}
+      <div class="view">
+        <div class="settings-group">
+          <div class="settings-title">Sound & feel</div>
+          <div class="settings-row">
+            <span>Haptics</span>
+            <button class="toggle ${Haptics.enabled ? 'on' : ''}" id="hapticsToggle"></button>
+          </div>
+        </div>
+        <div class="settings-group">
+          <div class="settings-title">Privacy</div>
+          <div class="settings-row" style="cursor:pointer" id="exportBtn">
+            <span>Export my data</span>
+            <span style="color:var(--ink-soft)">→</span>
+          </div>
+          <div class="settings-row danger" style="cursor:pointer" id="wipeBtn">
+            <span>Delete everything</span>
+            <span>→</span>
+          </div>
+        </div>
+        <div class="settings-group">
+          <div class="settings-title">Legal</div>
+          <a class="settings-row" href="#privacy" style="cursor:pointer;text-decoration:none;">
+            <span>Privacy Policy</span>
+            <span style="color:var(--ink-soft)">→</span>
+          </a>
+          <a class="settings-row" href="#cookies" style="cursor:pointer;text-decoration:none;">
+            <span>Cookie Policy</span>
+            <span style="color:var(--ink-soft)">→</span>
+          </a>
+          <a class="settings-row" href="#terms" style="cursor:pointer;text-decoration:none;">
+            <span>Terms of Service</span>
+            <span style="color:var(--ink-soft)">→</span>
+          </a>
+          <a class="settings-row" href="#faq" style="cursor:pointer;text-decoration:none;">
+            <span>FAQ</span>
+            <span style="color:var(--ink-soft)">→</span>
+          </a>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-title">System</div>
+          <a class="settings-row" href="#health" style="cursor:pointer;text-decoration:none;">
+            <span>System Health</span>
+            <span style="color:var(--ink-soft)">→</span>
+          </a>
+        </div>
+
+        <p style="color:var(--ink-soft); font-size:12px; text-align:center; padding:var(--s5) 0;">
+          Bite v1.0
+        </p>
+      </div>
+    `;
+    document.getElementById('hapticsToggle').onclick = () => {
+      Haptics.enabled = !Haptics.enabled;
+      Storage.set('bite.haptics', Haptics.enabled);
+      document.getElementById('hapticsToggle').classList.toggle('on');
+      if (Haptics.enabled) Haptics.medium();
+    };
+    document.getElementById('exportBtn').onclick = () => {
+      const data = { dna: DNA.load(), location: Location.load(), exportedAt: new Date().toISOString() };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = `bite-data-${Date.now()}.json`; a.click();
+      URL.revokeObjectURL(url);
+    };
+    document.getElementById('wipeBtn').onclick = () => {
+      showModal('Delete everything?', 'Your taste profile, saved places, and location will be wiped.', [
+        { label: 'Yes, delete', primary: true, onClick: () => { Storage.wipe(); Pool.clear(); toast('Wiped'); Router.go('home'); }},
+        { label: 'Cancel' }
+      ]);
+    };
+  },
+
+  // ─── Admin Pages ─────────────────────────────────────────────────
+  renderAdmin(v, page) {
+    const pages = {
+      privacy: {
+        title: 'Privacy Policy',
+        updated: 'April 26, 2026',
+        sections: [
+          { h: 'What we collect', body: 'Bite collects only the minimum data needed to recommend restaurants near you. Your approximate location (latitude/longitude) is sent to our server to query nearby restaurants. We never store your exact location — cache keys are rounded to ~110m grid cells.' },
+          { h: 'Local storage', body: 'Your taste profile (Taste DNA), saved restaurants, and recent visits are stored exclusively in your browser\'s LocalStorage. This data never leaves your device unless you explicitly export it.' },
+          { h: 'No tracking', body: 'Bite uses zero analytics, zero tracking pixels, zero fingerprinting. We don\'t use Google Analytics, Mixpanel, Facebook Pixel, or any third-party tracker. We don\'t run Google Tag Manager.' },
+          { h: 'No third-party data sharing', body: 'We do not sell, rent, or share any user data with third parties. Restaurant data comes from Google Places API via our proxy server, which strips all user-identifying information before forwarding requests.' },
+          { h: 'Server logs', body: 'Our Cloudflare Worker logs only HTTP status codes and aggregate request counts for cost monitoring. No IP addresses, no user agents, no referrers are logged to persistent storage.' },
+          { h: 'Your rights', body: 'You can export all your data as JSON from Settings at any time. You can delete all local data with one tap in Settings. Since we don\'t store anything server-side, there\'s nothing to delete on our end.' },
+          { h: 'Cookies', body: 'Bite does not set any cookies. We use LocalStorage for client-side preferences only. See our Cookie Policy for full details.' },
+          { h: 'Changes', body: 'We\'ll update this policy as Bite evolves. Major changes will be noted in the app.' },
+          { h: 'Contact', body: 'Questions? Reach us at privacy@bite.app.' },
+        ]
+      },
+      cookies: {
+        title: 'Cookie Policy',
+        updated: 'April 26, 2026',
+        sections: [
+          { h: 'Cookies we use', body: 'None. Bite does not set any HTTP cookies, ever. We don\'t use session cookies, tracking cookies, advertising cookies, or any other kind of cookie.' },
+          { h: 'LocalStorage', body: 'We use browser LocalStorage (not cookies) to store your preferences, taste profile, and saved restaurants. This data is accessible only to Bite on your device and is never transmitted to any server.' },
+          { h: 'What\'s stored locally', body: '<strong>bite.dna</strong> — Your taste profile (cuisine preferences, dietary needs, adventurousness)<br><strong>bite.location</strong> — Your last known location (expires after 30 minutes)<br><strong>bite.haptics</strong> — Whether haptic feedback is enabled' },
+          { h: 'Service Worker cache', body: 'Bite\'s Service Worker may cache static assets (HTML, CSS, JS) and API responses for faster loading. This cache is managed by your browser and can be cleared in your browser settings.' },
+          { h: 'Third-party cookies', body: 'Bite loads fonts from Google Fonts, which may set minimal cookies. We have no control over these, but Google Fonts is generally considered privacy-safe. No other third-party scripts are loaded.' },
+          { h: 'Clearing data', body: 'Go to Settings → Delete everything to wipe all LocalStorage data. You can also clear your browser cache and Service Worker data through your browser settings.' },
+        ]
+      },
+      terms: {
+        title: 'Terms of Service',
+        updated: 'April 26, 2026',
+        sections: [
+          { h: 'Agreement', body: 'By using Bite, you agree to these terms. Bite is provided "as is" without warranty of any kind.' },
+          { h: 'What Bite does', body: 'Bite is a restaurant discovery tool that helps you decide where to eat. We surface restaurants from Google Places API based on your location and preferences. We don\'t guarantee the accuracy, availability, or quality of any restaurant information.' },
+          { h: 'Restaurant data', body: 'All restaurant information (names, ratings, photos, hours, etc.) comes from Google Places API and is the property of Google and/or the respective business owners. Bite normalizes and filters this data but does not create or verify it.' },
+          { h: 'No account required', body: 'Bite V1 does not require registration or login. All personalization is stored locally on your device.' },
+          { h: 'Acceptable use', body: 'Don\'t abuse the service. Don\'t attempt to reverse-engineer our API proxy. Don\'t scrape restaurant data through our endpoints. Normal, human usage is always welcome.' },
+          { h: 'Rate limits', body: 'Our API proxy is rate-limited to 60 requests per minute per IP address. This is generous for normal use and protects against abuse.' },
+          { h: 'Limitation of liability', body: 'Bite is not responsible for your dining experience, food quality, restaurant availability, or any decisions made based on our recommendations. Always verify restaurant details independently before visiting.' },
+          { h: 'Changes', body: 'We may update these terms as the service evolves. Continued use constitutes acceptance.' },
+        ]
+      },
+      faq: {
+        title: 'FAQ',
+        updated: 'April 26, 2026',
+        sections: [
+          { h: 'How does Bite work?', body: 'Bite uses your location to find highly-rated restaurants nearby (4+ stars). You can browse them in a feed, swipe through them Tinder-style, or tap "Decide for me" for an instant recommendation powered by your taste profile.' },
+          { h: 'What is Taste DNA?', body: 'Your Taste DNA is a profile that learns from your interactions — which restaurants you swipe right on, save, or pass. Over time, it gets better at knowing what you\'ll like. It\'s stored entirely on your device.' },
+          { h: 'Does Bite cost anything?', body: 'Bite is free to use. We don\'t have ads, in-app purchases, or premium tiers (yet).' },
+          { h: 'Why only 4+ star restaurants?', body: 'Life\'s too short for mediocre food. We filter to 4+ stars so every suggestion is worth your time. This is a deliberate design choice, not a limitation.' },
+          { h: 'How does "Decide for me" work?', body: 'It considers your Taste DNA, the time of day, your distance preferences, and a bit of serendipity. Then it picks one restaurant — the one we think you\'ll love right now.' },
+          { h: 'What data do you collect?', body: 'Almost nothing. Your location is sent to our server to find nearby restaurants (and immediately forgotten). Everything else — your taste profile, saves, history — lives only on your device. See our Privacy Policy for details.' },
+          { h: 'Does Group Sync work across devices?', body: 'In V1, Group Sync works between browser tabs on the same device using the BroadcastChannel API. Cross-device sync is coming in V2.' },
+          { h: 'Can I use Bite offline?', body: 'Partially. The app shell loads offline via Service Worker, but restaurant data requires an internet connection since it\'s pulled live from Google Places.' },
+          { h: 'How do I delete my data?', body: 'Go to Settings → Delete everything. Since we don\'t store anything server-side, that\'s all there is to it.' },
+          { h: 'Who built this?', body: 'Bite was designed and built with care. We believe restaurant discovery should be calm, fast, and private.' },
+        ]
+      }
+    };
+
+    const p = pages[page];
+    if (!p) return Router.go('settings');
+
+    v.innerHTML = `
+      ${this.subHeader(p.title, 'settings')}
+      <div class="view" style="padding:var(--s4) var(--s5) var(--s8);">
+        <p style="font-size:12px;color:var(--ink-soft);margin-bottom:var(--s5);">Last updated: ${p.updated}</p>
+        ${p.sections.map(s => `
+          <div style="margin-bottom:var(--s6);">
+            <h3 style="font-size:15px;font-weight:700;margin-bottom:var(--s2);color:var(--ink);">${s.h}</h3>
+            <p style="font-size:14px;line-height:1.7;color:var(--ink-muted);">${s.body}</p>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  },
+
+  // ─── System Health ───────────────────────────────────────────────
+  async renderHealth(v) {
+    v.innerHTML = `
+      ${this.subHeader('System Health', 'settings')}
+      <div class="view" style="padding:var(--s4);">
+        <div style="text-align:center;padding:var(--s8) 0;">
+          <div class="skel" style="width:40px;height:40px;border-radius:50%;margin:0 auto var(--s4);"></div>
+          <p style="color:var(--ink-muted);font-size:14px;">Checking systems...</p>
+        </div>
+      </div>
+    `;
+
+    const checks = [];
+    const check = async (name, fn) => {
+      const start = performance.now();
+      try {
+        const result = await fn();
+        const ms = Math.round(performance.now() - start);
+        checks.push({ name, ok: result.ok, detail: result.detail, ms });
+      } catch (err) {
+        const ms = Math.round(performance.now() - start);
+        checks.push({ name, ok: false, detail: err.message, ms });
+      }
+    };
+
+    // Run health checks
+    await check('Worker API', async () => {
+      const res = await fetch(Config.WORKER_URL + '/health');
+      const data = await res.json();
+      return { ok: data.ok === true, detail: `Responded in ${res.status}` };
+    });
+
+    await check('Nearby Search', async () => {
+      const loc = Location.load();
+      const lat = loc?.lat || 37.7749;
+      const lng = loc?.lng || -122.4194;
+      const res = await fetch(`${Config.WORKER_URL}/api/nearby?lat=${lat}&lng=${lng}`);
+      const data = await res.json();
+      const count = data.restaurants?.length || 0;
+      return { ok: count > 0, detail: `${count} restaurants found${data.cached ? ' (cached)' : ''}` };
+    });
+
+    await check('Geocoding', async () => {
+      const res = await fetch(`${Config.WORKER_URL}/api/geocode?zip=94103`);
+      const data = await res.json();
+      return { ok: !!data.lat, detail: data.formatted || 'OK' };
+    });
+
+    await check('Reverse Geocoding', async () => {
+      const res = await fetch(`${Config.WORKER_URL}/api/reverse-geocode?lat=37.7749&lng=-122.4194`);
+      const data = await res.json();
+      return { ok: !!data.neighborhood, detail: `${data.neighborhood}, ${data.city}` };
+    });
+
+    await check('LocalStorage', async () => {
+      try {
+        localStorage.setItem('bite._healthcheck', '1');
+        localStorage.removeItem('bite._healthcheck');
+        const keys = Object.keys(localStorage).filter(k => k.startsWith('bite.'));
+        return { ok: true, detail: `${keys.length} keys stored` };
+      } catch {
+        return { ok: false, detail: 'Blocked or full' };
+      }
+    });
+
+    await check('Service Worker', async () => {
+      if (!('serviceWorker' in navigator)) return { ok: false, detail: 'Not supported' };
+      const reg = await navigator.serviceWorker.getRegistration();
+      return { ok: !!reg, detail: reg ? 'Active' : 'Not registered' };
+    });
+
+    const allOk = checks.every(c => c.ok);
+
+    v.innerHTML = `
+      ${this.subHeader('System Health', 'settings')}
+      <div class="view" style="padding:var(--s4);">
+        <div style="text-align:center;padding:var(--s5) 0 var(--s6);">
+          <div style="width:48px;height:48px;border-radius:50%;background:${allOk ? 'var(--success-soft)' : 'var(--danger-soft)'};display:grid;place-items:center;margin:0 auto var(--s3);">
+            <span style="font-size:24px;">${allOk ? '✓' : '!'}</span>
+          </div>
+          <p style="font-size:16px;font-weight:700;color:var(--ink);">${allOk ? 'All systems operational' : 'Some issues detected'}</p>
+          <p style="font-size:12px;color:var(--ink-soft);margin-top:4px;">${new Date().toLocaleString()}</p>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:var(--s2);">
+          ${checks.map(c => `
+            <div style="display:flex;align-items:center;padding:var(--s3) var(--s4);background:var(--surface);border:1px solid var(--border-light);border-radius:var(--r-md);">
+              <span style="width:8px;height:8px;border-radius:50%;background:${c.ok ? 'var(--success)' : 'var(--danger)'};flex-shrink:0;"></span>
+              <div style="flex:1;margin-left:var(--s3);">
+                <div style="font-size:14px;font-weight:600;">${c.name}</div>
+                <div style="font-size:12px;color:var(--ink-muted);">${c.detail}</div>
+              </div>
+              <span style="font-size:11px;color:var(--ink-soft);font-weight:500;">${c.ms}ms</span>
+            </div>
+          `).join('')}
+        </div>
+        <button class="btn-primary" style="margin-top:var(--s5);max-width:100%;" onclick="App.renderHealth(App.el())">Re-check</button>
+      </div>
+    `;
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// GROUP — BroadcastChannel MVP
+// ═══════════════════════════════════════════════════════════════════
+const Group = {
+  channel: null,
+  code: null,
+  selfId: 'u_' + Math.random().toString(36).slice(2, 10),
+  swipes: { self: {}, peer: {} },
+  onMatch: null,
+  onPeerJoin: null,
+
+  makeCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    return Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  },
+  start(code) {
+    if (this.code === code) return;
+    this.stop();
+    this.code = code;
+    this.channel = new BroadcastChannel('bite-group-' + code);
+    this.channel.onmessage = (e) => this.handle(e.data);
+    this.channel.postMessage({ type: 'hello', from: this.selfId });
+  },
+  stop() {
+    this.channel?.close();
+    this.channel = null;
+    this.code = null;
+    this.swipes = { self: {}, peer: {} };
+  },
+  handle(msg) {
+    if (msg.from === this.selfId) return;
+    if (msg.type === 'hello') {
+      this.channel.postMessage({ type: 'ack', from: this.selfId });
+      this.onPeerJoin?.();
+    } else if (msg.type === 'ack') {
+      this.onPeerJoin?.();
+    } else if (msg.type === 'swipe') {
+      this.swipes.peer[msg.id] = msg.action;
+      if (msg.action === 'right' && this.swipes.self[msg.id] === 'right') this.onMatch?.(msg.id);
+    }
+  },
+  broadcastSwipe(id, action) {
+    if (!this.channel) return;
+    this.swipes.self[id] = action;
+    this.channel.postMessage({ type: 'swipe', from: this.selfId, id, action });
+    if (action === 'right' && this.swipes.peer[id] === 'right') this.onMatch?.(id);
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════════════════
+window.App = App;
+window.Router = Router;
+
+Haptics.enabled = Storage.get('bite.haptics', true);
+
+// Wire tab bar
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.onclick = () => {
+    Haptics.light();
+    Router.go(tab.dataset.tab);
+  };
+});
+
+Router.init((route) => App.render(route));
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>

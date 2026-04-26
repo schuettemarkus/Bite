@@ -1,0 +1,30 @@
+name = "bite-worker"
+main = "src/index.js"
+compatibility_date = "2026-04-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Production environment variables (non-secret).
+# ALLOWED_ORIGIN should be your deployed frontend URL.
+# Override per-environment with `wrangler.toml`'s [env.production] block if needed.
+[vars]
+ALLOWED_ORIGIN = "https://bite.pages.dev"
+
+# KV namespace for caching nearby/place/photo/geocode responses + rate limit state.
+# Run `wrangler kv:namespace create CACHE` and paste the returned ID below.
+[[kv_namespaces]]
+binding = "CACHE"
+id = "4fcf8c7a017b480a947c63804fc68bfc"
+preview_id = "522976ee18684b4ca271e47eaa964740"
+
+# ─────────────────────────────────────────────────────────────────────
+# Secrets (not stored in this file). Set them with:
+#   wrangler secret put GOOGLE_PLACES_KEY
+#
+# The Google Cloud project must have these APIs enabled:
+#   • Places API (New)
+#   • Geocoding API
+# ─────────────────────────────────────────────────────────────────────
+
+[observability]
+enabled = true
+head_sampling_rate = 1.0
