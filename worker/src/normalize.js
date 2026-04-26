@@ -57,8 +57,9 @@ const TYPE_TO_TAG = {
 };
 
 // Types that indicate a gas station / convenience store (excluded from main feed)
-const GAS_STATION_TYPES = new Set([
-  'gas_station', 'fuel_station', 'ev_charging_station'
+const EXCLUDED_TYPES = new Set([
+  'gas_station', 'fuel_station', 'ev_charging_station',
+  'grocery_store', 'supermarket', 'convenience_store'
 ]);
 
 // Derive useful indicators from Google types
@@ -136,7 +137,7 @@ export function normalizePlace(googlePlace, userLat, userLng) {
   const name = googlePlace.displayName?.text || 'Unknown';
 
   const types = googlePlace.types || [];
-  const isGasStation = types.some(t => GAS_STATION_TYPES.has(t));
+  const isGasStation = types.some(t => EXCLUDED_TYPES.has(t));
 
   // Extract today's hours from weekdayDescriptions or periods
   const hours = googlePlace.currentOpeningHours || {};

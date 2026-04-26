@@ -1194,7 +1194,7 @@ a.r-card-rating:hover { background: var(--border); }
       <span>Search</span>
     </button>
     <button class="tab" data-tab="saved">
-      <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 4a1 1 0 011-1h12a1 1 0 011 1v17l-7-4-7 4V4z"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.5 5.5 6 .7-4.5 4 1.2 6.3L12 16.8l-5.2 2.7 1.2-6.3-4.5-4 6-.7z"/></svg>
       <span>Saved</span>
     </button>
     <button class="tab" data-tab="dna">
@@ -1480,7 +1480,7 @@ function recommend(mode, candidates, dna, opts = {}) {
 
   let pool = candidates.filter(r =>
     !r.isGasStation &&
-    !/gas station|fuel|shell|chevron|exxon|mobil|76|arco|valero|sunoco|bp |marathon petroleum|circle k/i.test(r.name || '') &&
+    !/gas station|fuel|shell|chevron|exxon|mobil|76|arco|valero|sunoco|bp |marathon petroleum|circle k|walmart|costco|kroger|safeway|albertsons|trader joe|whole foods|aldi|target|grocery|supermarket|food lion|publix|h-e-b|meijer|winco|smith's|fresh market/i.test(r.name || '') &&
     r.rating >= Config.MIN_RATING &&
     (r.openNow !== false) &&
     (r.distance == null || r.distance <= dna.maxDistance) &&
@@ -2082,13 +2082,14 @@ const App = {
   },
 
   subHeader(title, backTo) {
+    const showBack = backTo && backTo !== 'home';
     return `
       <div class="header">
-        <button style="width:36px;height:36px;display:grid;place-items:center;border-radius:50%;background:var(--bg-2);flex-shrink:0;" onclick="Router.go('${backTo || 'home'}')">${Icons.back}</button>
-        <a class="header-logo" href="#home" style="text-decoration:none;margin-left:var(--s2);">
+        ${showBack ? '<button style="width:36px;height:36px;display:grid;place-items:center;border-radius:50%;background:var(--bg-2);flex-shrink:0;" onclick="Router.go(\'' + backTo + '\')">' + Icons.back + '</button>' : ''}
+        <a class="header-logo" href="#home" style="text-decoration:none;${showBack ? 'margin-left:var(--s2);' : ''}">
           <span><span style="color:var(--primary-light);">b</span><span style="color:var(--primary);">ite</span><span style="color:var(--accent);">.</span></span>
         </a>
-        ${title ? `<span style="font-size:15px;font-weight:600;color:var(--ink-muted);margin-left:var(--s2);">${title}</span>` : ''}
+        ${title ? '<span style="font-size:15px;font-weight:600;color:var(--ink-muted);margin-left:var(--s2);">' + title + '</span>' : ''}
         <div style="flex:1;"></div>
       </div>
     `;
@@ -2450,7 +2451,7 @@ const App = {
           }
           <div class="r-card-body">
             <div class="r-card-row">
-              <div class="r-card-name">${esc(r.name)}</div>
+              <div class="r-card-name">${esc(r.name)}${r.rating >= 4.9 ? ' <span style="display:inline-flex;align-items:center;gap:2px;font-size:10px;font-weight:700;color:#D4A017;background:#FEF9E7;padding:1px 6px;border-radius:var(--r-full);vertical-align:middle;">★ Perfect</span>' : ''}</div>
               <a class="r-card-rating" href="${r.mapsUrl || '#'}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="See reviews on Google">
                 <svg viewBox="0 0 12 12"><path d="M6 1l1.5 3.2 3.5.4-2.6 2.3.7 3.4L6 8.5 2.9 10.3l.7-3.4L1 4.6l3.5-.4z"/></svg>
                 ${r.rating?.toFixed(1) || '—'}
@@ -2707,7 +2708,7 @@ const App = {
         </div>
         <div class="swipe-actions">
           <button class="action-btn no" id="btn-no" data-tooltip="Pass">${Icons.x}</button>
-          <button class="action-btn save" id="btn-save" data-tooltip="Save">${Icons.bookmark}</button>
+          <button class="action-btn save" id="btn-save" data-tooltip="Save">${Icons.star}</button>
           <button class="action-btn yes" id="btn-yes" data-tooltip="Let's go">${Icons.check}</button>
         </div>
         <div class="dots">
@@ -2739,7 +2740,7 @@ const App = {
           <div class="card-meta">
             <span>${r.cuisine}</span><span class="dot"></span><span>${'$'.repeat(Math.max(1, r.priceLevel))}</span><span class="dot"></span><span>${r.distance != null ? r.distance + ' mi' : 'nearby'}</span>
           </div>
-          <a class="card-rating" href="${r.mapsUrl || '#'}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="text-decoration:none;color:var(--ink-muted);">${r.rating?.toFixed(1) || '—'} stars · ${r.reviewCount?.toLocaleString() || '0'} reviews <span style="font-size:11px;color:var(--primary);font-weight:600;">See reviews</span></a>
+          <div class="card-rating" style="display:flex;align-items:center;gap:4px;"><svg viewBox="0 0 12 12" width="13" height="13" style="fill:#D4A017;stroke:none;flex-shrink:0;"><path d="M6 1l1.5 3.2 3.5.4-2.6 2.3.7 3.4L6 8.5 2.9 10.3l.7-3.4L1 4.6l3.5-.4z"/></svg><span style="color:var(--ink);font-weight:600;">${r.rating?.toFixed(1) || '—'}</span> · <a href="${r.mapsUrl || '#'}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--primary);text-decoration:none;">${r.reviewCount?.toLocaleString() || '0'} reviews</a></div>
           ${dietBadgeHtml(r)}
           ${r.tags?.length ? `<div class="card-tags">${r.tags.slice(0,3).map(t => `<span class="card-tag">${t}</span>`).join('')}</div>` : ''}
         </div>
@@ -2894,12 +2895,12 @@ const App = {
           <div class="match-photo" style="${img ? `background-image: url('${img}')` : 'background: linear-gradient(135deg, var(--primary-soft), var(--accent-soft))'}"></div>
           <div class="match-body">
             <div style="display:flex;align-items:start;justify-content:space-between;gap:12px;">
-              <div class="match-name">${esc(r.name)}</div>
+              <div class="match-name">${esc(r.name)}${r.rating >= 4.9 ? ' <span style="display:inline-flex;align-items:center;gap:2px;font-size:11px;font-weight:700;color:#D4A017;background:#FEF9E7;padding:2px 8px;border-radius:var(--r-full);vertical-align:middle;">★ Perfect Rating</span>' : ''}</div>
               <button id="saveToggle" data-tooltip="${isSaved ? 'Saved' : 'Save'}" style="flex-shrink:0;width:36px;height:36px;display:grid;place-items:center;border-radius:50%;background:var(--bg-2);">
                 <span style="display:flex;width:18px;height:18px;">${isSaved ? Icons.heartFilled : Icons.heart}</span>
               </button>
             </div>
-            <div class="match-meta">${r.cuisine} · ${'$'.repeat(Math.max(1, r.priceLevel))} · ${r.distance != null ? r.distance + ' mi away' : 'nearby'} · <a href="${r.mapsUrl || '#'}" target="_blank" rel="noopener" style="color:var(--primary);font-weight:600;text-decoration:none;">${r.rating?.toFixed(1) || '—'} stars</a></div>
+            <div class="match-meta">${r.cuisine} · ${'$'.repeat(Math.max(1, r.priceLevel))} · ${r.distance != null ? r.distance + ' mi away' : 'nearby'} · <a href="${r.mapsUrl || '#'}" target="_blank" rel="noopener" style="color:#D4A017;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:3px;"><svg viewBox="0 0 12 12" width="13" height="13" style="fill:#D4A017;stroke:none;"><path d="M6 1l1.5 3.2 3.5.4-2.6 2.3.7 3.4L6 8.5 2.9 10.3l.7-3.4L1 4.6l3.5-.4z"/></svg>${r.rating?.toFixed(1) || '—'}</a></div>
             ${dietBadgeHtml(r)}
 
             <div class="r-detail-ai" style="margin:var(--s4) 0;">
