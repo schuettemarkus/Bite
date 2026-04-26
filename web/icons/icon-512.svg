@@ -1,22 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <rect width="512" height="512" rx="96" fill="#1A3A5C"/>
-  <g transform="translate(64, 100)" stroke="#FFFFFF" fill="none">
-    <!-- Upper gum -->
-    <path d="M26 100C26 42 84 10 192 10s166 32 166 90v20c0 10-8 18-18 18H44c-10 0-18-8-18-18v-20z" stroke-width="10"/>
+  <g transform="translate(52, 80)" stroke="#FFFFFF" fill="none">
+    <!-- Upper jaw -->
+    <path d="M38 144C38 64 106 22 204 22s166 42 166 122" stroke-width="12" stroke-linecap="round"/>
+    <path d="M38 144c0 16 10 26 26 26h280c16 0 26-10 26-26" stroke-width="12"/>
     <!-- Upper teeth -->
-    <rect x="50" y="126" width="34" height="44" rx="14" stroke-width="9"/>
-    <rect x="92" y="126" width="34" height="52" rx="14" stroke-width="9"/>
-    <rect x="138" y="126" width="38" height="58" rx="16" stroke-width="9"/>
-    <rect x="186" y="126" width="38" height="58" rx="16" stroke-width="9"/>
-    <rect x="234" y="126" width="34" height="52" rx="14" stroke-width="9"/>
-    <rect x="276" y="126" width="34" height="44" rx="14" stroke-width="9"/>
-    <!-- Lower gum -->
-    <path d="M26 240c0 32 58 52 166 52s166-20 166-52v-20c0-10-8-18-18-18H44c-10 0-18 8-18 18v20z" stroke-width="10"/>
+    <path d="M70 170c0 0 2 48 22 48s22-48 22-48" stroke-width="10" stroke-linecap="round"/>
+    <path d="M118 170c0 0 2 56 24 56s24-56 24-56" stroke-width="10" stroke-linecap="round"/>
+    <path d="M170 170c0 0 2 64 26 64s26-64 26-64" stroke-width="10" stroke-linecap="round"/>
+    <path d="M226 170c0 0 2 64 26 64s26-64 26-64" stroke-width="10" stroke-linecap="round"/>
+    <path d="M282 170c0 0 2 56 24 56s24-56 24-56" stroke-width="10" stroke-linecap="round"/>
+    <!-- Lower jaw -->
+    <path d="M58 268c0 48 58 86 146 86s146-38 146-86" stroke-width="12" stroke-linecap="round"/>
+    <path d="M58 268c0-16 10-26 26-26h240c16 0 26 10 26 26" stroke-width="12"/>
     <!-- Lower teeth -->
-    <rect x="72" y="186" width="34" height="42" rx="14" stroke-width="9"/>
-    <rect x="114" y="180" width="36" height="50" rx="15" stroke-width="9"/>
-    <rect x="162" y="178" width="38" height="52" rx="16" stroke-width="9"/>
-    <rect x="210" y="180" width="36" height="50" rx="15" stroke-width="9"/>
-    <rect x="254" y="186" width="34" height="42" rx="14" stroke-width="9"/>
+    <path d="M96 242c0 0 2-42 18-42s18 42 18 42" stroke-width="10" stroke-linecap="round"/>
+    <path d="M138 242c0 0 2-52 22-52s22 52 22 52" stroke-width="10" stroke-linecap="round"/>
+    <path d="M186 242c0 0 2-58 24-58s24 58 24 58" stroke-width="10" stroke-linecap="round"/>
+    <path d="M238 242c0 0 2-52 22-52s22 52 22 52" stroke-width="10" stroke-linecap="round"/>
+    <path d="M286 242c0 0 2-42 18-42s18 42 18 42" stroke-width="10" stroke-linecap="round"/>
   </g>
 </svg>

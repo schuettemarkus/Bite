@@ -338,52 +338,52 @@ a { color: inherit; text-decoration: none; }
 .decide-banner .banner-text h3 { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 2px; position: relative; z-index: 1; }
 .decide-banner .banner-text p { font-size: 14px; opacity: 0.75; position: relative; z-index: 1; }
 
-/* ── Action trio ─────────────────────────────────────── */
-.action-trio {
-  display: flex;
+/* ── Action cards row ─────────────────────────────────── */
+.action-row-home {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: var(--s3);
-  margin: 0 var(--s4) var(--s5);
+  margin: 0 var(--s4) var(--s4);
 }
-.trio-card {
-  flex: 1;
-  padding: var(--s4) var(--s3);
+.action-card {
+  padding: var(--s5) var(--s4);
   border-radius: var(--r-lg);
-  text-align: center;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: var(--s2);
-  transition: transform var(--d-fast), box-shadow var(--d-fast);
-  border: 1px solid var(--border-light);
+  gap: var(--s3);
   cursor: pointer;
+  transition: transform var(--d-fast), box-shadow var(--d-fast);
+  box-shadow: var(--shadow-sm);
 }
-.trio-card:active { transform: scale(0.96); }
-.trio-card .trio-icon {
+.action-card:active { transform: scale(0.97); }
+.action-card .ac-icon {
   width: 44px;
   height: 44px;
-  border-radius: 50%;
+  border-radius: var(--r-md);
   display: grid;
   place-items: center;
+  flex-shrink: 0;
 }
-.trio-card .trio-icon svg { width: 20px; height: 20px; stroke-width: 2; fill: none; }
-.trio-card .trio-label { font-size: 12px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.3; }
-.trio-card .trio-sub { font-size: 10px; opacity: 0.6; line-height: 1.3; }
+.action-card .ac-icon svg { width: 20px; height: 20px; stroke-width: 2; fill: none; }
+.action-card .ac-text { min-width: 0; }
+.action-card .ac-label { font-size: 14px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.2; }
+.action-card .ac-sub { font-size: 11px; opacity: 0.6; line-height: 1.3; margin-top: 2px; }
 
-.trio-card.recommend {
-  background: var(--accent-soft);
-  border-color: rgba(232, 146, 47, 0.2);
+.action-card.recommend {
+  background: linear-gradient(135deg, #FFF7ED, #FFF3E0);
+  border: 1px solid rgba(232, 146, 47, 0.15);
 }
-.trio-card.recommend .trio-icon { background: var(--accent); }
-.trio-card.recommend .trio-icon svg { stroke: white; }
-.trio-card.recommend .trio-label { color: var(--accent-dark); }
+.action-card.recommend .ac-icon { background: var(--accent); border-radius: var(--r-md); }
+.action-card.recommend .ac-icon svg { stroke: white; }
+.action-card.recommend .ac-label { color: var(--accent-dark); }
 
-.trio-card.favorites {
-  background: var(--success-soft);
-  border-color: rgba(46, 158, 90, 0.2);
+.action-card.browse {
+  background: linear-gradient(135deg, #EDF0F5, #E2E6ED);
+  border: 1px solid rgba(26, 58, 92, 0.1);
 }
-.trio-card.favorites .trio-icon { background: var(--success); }
-.trio-card.favorites .trio-icon svg { stroke: white; }
-.trio-card.favorites .trio-label { color: #1B7A3D; }
+.action-card.browse .ac-icon { background: var(--primary); border-radius: var(--r-md); }
+.action-card.browse .ac-icon svg { stroke: white; }
+.action-card.browse .ac-label { color: var(--primary); }
 
 /* ── Restaurant feed ─────────────────────────────────── */
 .feed { padding: 0 var(--s4) var(--s4); display: flex; flex-direction: column; gap: var(--s3); }
@@ -1645,39 +1645,45 @@ function openStatusHtml(r) {
 function estimateWaitTime(r) {
   const ctx = getContext();
   let baseMin = 5;
+  const factors = []; // track what's driving the estimate
 
   // Popular restaurants have longer waits
-  if (r.reviewCount > 2000) baseMin += 10;
-  else if (r.reviewCount > 500) baseMin += 5;
+  if (r.reviewCount > 2000) { baseMin += 10; factors.push('very popular spot'); }
+  else if (r.reviewCount > 500) { baseMin += 5; factors.push('popular spot'); }
 
   // Peak hours
-  if (ctx.hour >= 11 && ctx.hour <= 13) baseMin += 8;  // lunch rush
-  if (ctx.hour >= 18 && ctx.hour <= 20) baseMin += 12;  // dinner rush
-  if (ctx.hour >= 21 || ctx.hour < 6) baseMin = Math.max(0, baseMin - 5); // late = quieter
+  if (ctx.hour >= 11 && ctx.hour <= 13) { baseMin += 8; factors.push('lunch rush'); }
+  if (ctx.hour >= 18 && ctx.hour <= 20) { baseMin += 12; factors.push('dinner rush'); }
+  if (ctx.hour >= 21 || ctx.hour < 6) { baseMin = Math.max(0, baseMin - 5); factors.push('off-peak'); }
 
   // Weekends are busier
-  if (ctx.isWeekend) baseMin += 5;
-  if (ctx.isWeekend && ctx.meal === 'breakfast') baseMin += 8; // brunch rush
+  if (ctx.isWeekend) { baseMin += 5; factors.push('weekend'); }
+  if (ctx.isWeekend && ctx.meal === 'breakfast') { baseMin += 8; factors.push('brunch rush'); }
 
   // Fine dining = longer wait
-  if ((r.indicators || []).includes('fine-dining')) baseMin += 10;
+  if ((r.indicators || []).includes('fine-dining')) { baseMin += 10; factors.push('fine dining'); }
   // Quick service = shorter
-  if ((r.indicators || []).includes('quick-service')) baseMin = Math.max(0, baseMin - 8);
+  if ((r.indicators || []).includes('quick-service')) { baseMin = Math.max(0, baseMin - 8); factors.push('quick service'); }
 
   // Holiday boost
-  if (ctx.isHoliday) baseMin += 10;
+  if (ctx.isHoliday) { baseMin += 10; factors.push(ctx.holidayName || 'holiday'); }
 
   // Add some randomness so it doesn't feel static
   const jitter = Math.floor(Math.random() * 6) - 3;
   baseMin = Math.max(0, baseMin + jitter);
 
+  // Determine level and comparison to normal
   let level = 'low';
-  let label = 'No wait';
-  if (baseMin > 20) { level = 'high'; label = `~${baseMin} min wait`; }
-  else if (baseMin > 8) { level = 'medium'; label = `~${baseMin} min wait`; }
-  else if (baseMin > 0) { label = `~${baseMin} min wait`; }
+  let label = 'No wait expected';
+  let comparison = '';
+  if (baseMin > 20) { level = 'high'; label = '~' + baseMin + ' min wait'; comparison = 'Longer than usual'; }
+  else if (baseMin > 8) { level = 'medium'; label = '~' + baseMin + ' min wait'; comparison = 'About average'; }
+  else if (baseMin > 0) { label = '~' + baseMin + ' min wait'; comparison = 'Shorter than usual'; }
+  else { comparison = 'Typically no wait'; }
 
-  return { min: baseMin, level, label };
+  const source = factors.length ? factors.slice(0, 2).join(', ') : 'typical conditions';
+
+  return { min: baseMin, level, label, comparison, source };
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1751,13 +1757,15 @@ const Icons = {
   close: `<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><line x1="7" y1="7" x2="17" y2="17"/><line x1="17" y1="7" x2="7" y2="17"/></svg>`,
   pin: `<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s-7-5.3-7-11a7 7 0 1114 0c0 5.7-7 11-7 11z"/><circle cx="12" cy="11" r="2.5"/></svg>`,
   chevron: `<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>`,
-  heart: `<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.5-9-9c-1.2-3 .3-6.5 3.5-6.5 1.8 0 3.2.8 4 2.2 0 0 1.4-2.2 3.5-2.2 3 0 5 3.5 3.5 6.5-2 4.5-9 9-9 9z"/></svg>`,
+  heart: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 000-7.78z"/></svg>`,
+  heartFilled: `<svg viewBox="0 0 24 24" fill="var(--danger)" stroke="var(--danger)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 000-7.78z"/></svg>`,
   bookmark: `<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4a1 1 0 011-1h12a1 1 0 011 1v17l-7-4-7 4V4z"/></svg>`,
   check: `<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12.5l3 3 5-6"/></svg>`,
   x: `<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><line x1="7" y1="7" x2="17" y2="17"/><line x1="17" y1="7" x2="7" y2="17"/></svg>`,
   search: `<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>`,
   sparkle: `<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/></svg>`,
   zap: `<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
+  go: `<svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 5l7 7-7 7"/></svg>`,
   map: `<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l6-3 6 3 6-3v13l-6 3-6-3-6 3V7z"/><path d="M9 4v13M15 7v13"/></svg>`,
   phone: `<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6A19.79 19.79 0 012.12 4.18 2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.362 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>`,
   truck: `<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3h15v13H1zM16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>`,
@@ -1765,24 +1773,27 @@ const Icons = {
 
 // Chomping jaw logo — open jaw eating the word "bite."
 // Chattering teeth logo — wind-up toy style with gum line + rounded teeth
-const LogoSVG = `<svg viewBox="0 0 36 30" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;">
-  <!-- Upper gum/jaw -->
-  <path d="M3 10C3 4 9 1 18 1s15 3 15 9v2c0 1-1 2-2 2H5c-1 0-2-1-2-2v-2z" stroke="currentColor" stroke-width="1.6" fill="none"/>
-  <!-- Upper teeth hanging down — rounded bumps -->
-  <rect x="5.5" y="12" width="3.2" height="4" rx="1.4" stroke="currentColor" stroke-width="1.3"/>
-  <rect x="9.8" y="12" width="3.2" height="4.6" rx="1.4" stroke="currentColor" stroke-width="1.3"/>
-  <rect x="14.2" y="12" width="3.6" height="5" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
-  <rect x="19" y="12" width="3.6" height="5" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
-  <rect x="23.8" y="12" width="3.2" height="4.6" rx="1.4" stroke="currentColor" stroke-width="1.3"/>
-  <rect x="28" y="12" width="3.2" height="4" rx="1.4" stroke="currentColor" stroke-width="1.3"/>
-  <!-- Lower gum/jaw -->
-  <path d="M3 24c0 3 6 5 15 5s15-2 15-5v-2c0-1-1-2-2-2H5c-1 0-2 1-2 2v2z" stroke="currentColor" stroke-width="1.6" fill="none"/>
-  <!-- Lower teeth pointing up — rounded bumps -->
-  <rect x="7.5" y="16.5" width="3.2" height="3.8" rx="1.4" stroke="currentColor" stroke-width="1.3"/>
-  <rect x="11.8" y="15.8" width="3.4" height="4.5" rx="1.4" stroke="currentColor" stroke-width="1.3"/>
-  <rect x="16.4" y="15.5" width="3.6" height="4.8" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
-  <rect x="21.2" y="15.8" width="3.4" height="4.5" rx="1.4" stroke="currentColor" stroke-width="1.3"/>
-  <rect x="25.6" y="16.5" width="3.2" height="3.8" rx="1.4" stroke="currentColor" stroke-width="1.3"/>
+// Chattering teeth logo — traced from reference image, transparent
+const LogoSVG = `<svg viewBox="0 0 40 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;">
+  <!-- Upper jaw — curved gum with wavy bottom edge -->
+  <path d="M4 14C4 6 11 1.5 20 1.5S36 6 36 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M4 14c0 1.5 1 2.5 2.5 2.5h27c1.5 0 2.5-1 2.5-2.5" stroke="currentColor" stroke-width="1.5"/>
+  <!-- Upper teeth — individual rounded teeth hanging from gum -->
+  <path d="M7 16.5c0 0 .2 4.5 2 4.5s2-4.5 2-4.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+  <path d="M11.5 16.5c0 0 .2 5.2 2.2 5.2s2.2-5.2 2.2-5.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+  <path d="M16.5 16.5c0 0 .2 5.8 2.3 5.8s2.3-5.8 2.3-5.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+  <path d="M21.5 16.5c0 0 .2 5.8 2.3 5.8s2.3-5.8 2.3-5.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+  <path d="M26.5 16.5c0 0 .2 5.2 2.2 5.2s2.2-5.2 2.2-5.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+  <path d="M31 16.5c0 0 .2 4.5 2 4.5s2-4.5 2-4.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+  <!-- Lower jaw — curved gum with wavy top edge, angled open -->
+  <path d="M6 26c0 4.5 5.5 8.5 14 8.5S34 30.5 34 26" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M6 26c0-1.5 1-2.5 2.5-2.5h23c1.5 0 2.5 1 2.5 2.5" stroke="currentColor" stroke-width="1.5"/>
+  <!-- Lower teeth — individual rounded teeth pointing up -->
+  <path d="M9.5 23.5c0 0 .2-4 1.8-4s1.8 4 1.8 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+  <path d="M13.8 23.5c0 0 .2-4.8 2-4.8s2 4.8 2 4.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+  <path d="M18.5 23.5c0 0 .2-5.2 2.2-5.2s2.2 5.2 2.2 5.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+  <path d="M23.5 23.5c0 0 .2-4.8 2-4.8s2 4.8 2 4.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+  <path d="M28 23.5c0 0 .2-4 1.8-4s1.8 4 1.8 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
 </svg>`;
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1820,13 +1831,14 @@ const App = {
   },
 
   subHeader(title, backTo) {
-    const titleHtml = title
-      ? `<span style="font-size:17px;font-weight:700;flex:1;text-align:center;margin-right:36px;">${title}</span>`
-      : `<div style="flex:1;display:flex;align-items:center;justify-content:center;margin-right:36px;"><div class="header-logo"><span style="color:var(--primary);">${LogoSVG}</span><span>bite<span style="color:var(--accent);">.</span></span></div></div>`;
     return `
       <div class="header">
-        <button style="width:36px;height:36px;display:grid;place-items:center;border-radius:50%;background:var(--bg-2);" onclick="Router.go('${backTo || 'home'}')">${Icons.back}</button>
-        ${titleHtml}
+        <button style="width:36px;height:36px;display:grid;place-items:center;border-radius:50%;background:var(--bg-2);flex-shrink:0;" onclick="Router.go('${backTo || 'home'}')">${Icons.back}</button>
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:var(--s2);">
+          <span style="color:var(--primary);display:flex;align-items:center;">${LogoSVG}</span>
+          ${title ? `<span style="font-size:15px;font-weight:700;color:var(--ink-muted);">·</span><span style="font-size:15px;font-weight:600;color:var(--ink);">${title}</span>` : `<span style="font-weight:800;font-size:20px;letter-spacing:-0.03em;color:var(--primary);">bite<span style="color:var(--accent);">.</span></span>`}
+        </div>
+        <div style="width:36px;flex-shrink:0;"></div>
       </div>
     `;
   },
@@ -1863,58 +1875,76 @@ const App = {
     const dna = DNA.load();
 
     if (!loc) {
+      // Auto-detect location silently on first load
       v.innerHTML = `
         ${this.header(null)}
         <div class="view">
           <div class="primer">
-            <div class="primer-icon">${Icons.pin}</div>
-            <h2>Find great food nearby</h2>
-            <p>Bite uses your location to surface the best restaurants around you. We never store it.</p>
-            <button class="btn-primary" id="useLocBtn">Use my location</button>
-            <button class="btn-link" id="zipToggle">Enter a ZIP code instead</button>
-            <div id="zipForm" style="display:none">
-              <input class="zip-input" id="zipInput" placeholder="ZIP code" maxlength="10" autocomplete="postal-code" />
-              <button class="btn-primary" id="zipGo" style="margin-top:12px">Find restaurants</button>
-            </div>
+            <div class="primer-icon" style="animation: iconPulse 2s ease-in-out infinite;">${Icons.pin}</div>
+            <h2>Finding you...</h2>
+            <p>Looking for great restaurants nearby.</p>
           </div>
         </div>
       `;
-      document.getElementById('useLocBtn').onclick = async () => {
-        Haptics.medium();
-        const btn = document.getElementById('useLocBtn');
-        btn.textContent = 'Locating...';
-        btn.disabled = true;
-        try {
-          await Location.getFromBrowser();
-          this.renderHome(v);
-        } catch {
-          btn.textContent = 'Use my location';
-          btn.disabled = false;
-          toast('Permission denied. Try a ZIP code.');
-          document.getElementById('zipToggle').click();
-        }
-      };
-      document.getElementById('zipToggle').onclick = () => {
-        document.getElementById('zipForm').style.display = 'block';
-        document.getElementById('zipToggle').style.display = 'none';
-        document.getElementById('zipInput').focus();
-      };
-      document.getElementById('zipGo').onclick = async () => {
-        const zip = document.getElementById('zipInput').value.trim();
-        if (!zip) return;
-        Haptics.medium();
-        const btn = document.getElementById('zipGo');
-        btn.textContent = 'Looking up...';
-        btn.disabled = true;
-        try {
-          await Location.getFromZip(zip);
-          this.renderHome(v);
-        } catch {
-          btn.textContent = 'Find restaurants';
-          btn.disabled = false;
-          toast("Couldn't find that location.");
-        }
-      };
+
+      try {
+        await Location.getFromBrowser();
+        this.renderHome(v);
+      } catch {
+        // Permission denied — show manual fallback
+        v.innerHTML = `
+          ${this.header(null)}
+          <div class="view">
+            <div class="primer">
+              <div class="primer-icon">${Icons.pin}</div>
+              <h2>Where are you?</h2>
+              <p>We need your location to find restaurants. We never store it.</p>
+              <button class="btn-primary" id="retryLocBtn">Try again</button>
+              <button class="btn-link" id="zipToggle">Enter a ZIP code</button>
+              <div id="zipForm" style="display:none">
+                <input class="zip-input" id="zipInput" placeholder="ZIP code" maxlength="10" autocomplete="postal-code" />
+                <button class="btn-primary" id="zipGo" style="margin-top:12px">Find restaurants</button>
+              </div>
+            </div>
+          </div>
+        `;
+        document.getElementById('retryLocBtn').onclick = async () => {
+          Haptics.medium();
+          const btn = document.getElementById('retryLocBtn');
+          btn.textContent = 'Locating...';
+          btn.disabled = true;
+          try {
+            await Location.getFromBrowser();
+            this.renderHome(v);
+          } catch {
+            btn.textContent = 'Try again';
+            btn.disabled = false;
+            toast('Location denied. Enter a ZIP code.');
+            document.getElementById('zipToggle').click();
+          }
+        };
+        document.getElementById('zipToggle').onclick = () => {
+          document.getElementById('zipForm').style.display = 'block';
+          document.getElementById('zipToggle').style.display = 'none';
+          document.getElementById('zipInput').focus();
+        };
+        document.getElementById('zipGo').onclick = async () => {
+          const zip = document.getElementById('zipInput').value.trim();
+          if (!zip) return;
+          Haptics.medium();
+          const btn = document.getElementById('zipGo');
+          btn.textContent = 'Looking up...';
+          btn.disabled = true;
+          try {
+            await Location.getFromZip(zip);
+            this.renderHome(v);
+          } catch {
+            btn.textContent = 'Find restaurants';
+            btn.disabled = false;
+            toast("Couldn't find that location.");
+          }
+        };
+      }
       return;
     }
 
@@ -1934,23 +1964,27 @@ const App = {
         </div>
 
         <button class="decide-banner" id="decideBtn">
-          <div class="banner-icon">${Icons.zap}</div>
+          <div class="banner-icon">${Icons.go}</div>
           <div class="banner-text">
             <h3>Decide for me</h3>
             <p>One tap. The perfect restaurant, right now.</p>
           </div>
         </button>
 
-        <div class="action-trio">
-          <button class="trio-card recommend" id="topPickBtn">
-            <div class="trio-icon">${Icons.sparkle}</div>
-            <div class="trio-label">Top Pick</div>
-            <div class="trio-sub">Our best match</div>
+        <div class="action-row-home">
+          <button class="action-card recommend" id="topPickBtn">
+            <div class="ac-icon">${Icons.sparkle}</div>
+            <div class="ac-text">
+              <div class="ac-label">Our Best Match</div>
+              <div class="ac-sub">Personalized pick</div>
+            </div>
           </button>
-          <button class="trio-card favorites" id="favoritesBtn">
-            <div class="trio-icon">${Icons.heart}</div>
-            <div class="trio-label">Favorites</div>
-            <div class="trio-sub">${DNA.load().saved.length || 'No'} saved</div>
+          <button class="action-card browse" id="browseBtn">
+            <div class="ac-icon">${Icons.zap}</div>
+            <div class="ac-text">
+              <div class="ac-label">Browse</div>
+              <div class="ac-sub">Swipe to discover</div>
+            </div>
           </button>
         </div>
 
@@ -1976,12 +2010,12 @@ const App = {
       ]);
     };
 
-    // Wire decide button — random pick
+    // Wire decide button — random pick (respects active category)
     document.getElementById('decideBtn').onclick = async () => {
       Haptics.medium();
       try {
-        const restaurants = await Pool.fetch(loc);
-        if (restaurants.length === 0) { toast('No 4-star spots nearby.'); return; }
+        const restaurants = this._filteredByCat(await Pool.fetch(loc));
+        if (restaurants.length === 0) { toast('No restaurants in this category.'); return; }
         const pick = recommend('surprise', restaurants, dna);
         if (!pick) { toast('No matches. Try adjusting your profile.'); return; }
         this.state.activeMatch = pick;
@@ -1991,12 +2025,12 @@ const App = {
       }
     };
 
-    // Wire top pick — best recommendation
+    // Wire top pick — best recommendation (respects active category)
     document.getElementById('topPickBtn').onclick = async () => {
       Haptics.medium();
       try {
-        const restaurants = await Pool.fetch(loc);
-        if (restaurants.length === 0) { toast('No 4-star spots nearby.'); return; }
+        const restaurants = this._filteredByCat(await Pool.fetch(loc));
+        if (restaurants.length === 0) { toast('No restaurants in this category.'); return; }
         const pick = recommend('familiar', restaurants, dna);
         if (!pick) { toast('No matches. Try adjusting your profile.'); return; }
         this.state.activeMatch = pick;
@@ -2006,70 +2040,37 @@ const App = {
       }
     };
 
-    // Wire favorites
-    document.getElementById('favoritesBtn').onclick = () => {
-      Haptics.light();
-      Router.go('saved');
+    // Wire browse — starts swipe mode
+    document.getElementById('browseBtn').onclick = () => {
+      Haptics.medium();
+      const cat = this.state.activeCat || 'all';
+      const mode = cat !== 'all' ? 'familiar' : 'surprise';
+      this.startSwipe(mode);
     };
 
-    // Wire category chips
+    // Wire category chips — updates feed, top pick, and CTA context
+    this.state.activeCat = 'all';
     document.querySelectorAll('[data-cat]').forEach(el => {
       el.onclick = () => {
         document.querySelectorAll('[data-cat]').forEach(c => c.classList.remove('active'));
         el.classList.add('active');
         Haptics.light();
-        this.filterFeed(el.dataset.cat);
+        this.state.activeCat = el.dataset.cat;
+        this.refreshHomeContent(loc, dna);
       };
     });
 
     // Wire search
     document.getElementById('searchInput').oninput = (e) => {
       this.state.searchQuery = e.target.value.toLowerCase();
-      this.filterFeed(document.querySelector('[data-cat].active')?.dataset.cat || 'all');
+      this.refreshHomeContent(loc, dna);
     };
 
-    // Fetch and render feed + top pick
+    // Fetch restaurants then render everything
     try {
       const restaurants = await Pool.fetch(loc);
       this.state._allRestaurants = restaurants;
-
-      // Render AI top pick
-      const topPick = recommend('surprise', restaurants, dna);
-      if (topPick) {
-        const ctx = getContext();
-        const img = API.imageUrl(topPick.imagePath);
-        const pickEl = document.getElementById('topPick');
-        if (pickEl) {
-          pickEl.innerHTML = `
-            <div style="margin:0 var(--s4) var(--s4);">
-              <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink-soft);margin-bottom:var(--s2);display:flex;align-items:center;gap:6px;">
-                ${Icons.sparkle} Top pick for ${ctx.meal === 'breakfast' ? 'this morning' : ctx.meal === 'lunch' ? 'lunch' : ctx.meal === 'afternoon' ? 'this afternoon' : ctx.meal === 'latenight' ? 'tonight' : 'dinner'}
-              </div>
-              <div class="r-card" data-rid="${topPick.id}" style="border:2px solid var(--primary);cursor:pointer;" id="topPickCard">
-                ${img ? `<img class="r-card-img" src="${img}" alt="${topPick.name}" loading="lazy" style="height:140px;" />` : ''}
-                <div class="r-card-body">
-                  <div class="r-card-row">
-                    <div class="r-card-name">${topPick.name}</div>
-                    <div class="r-card-rating">
-                      <svg viewBox="0 0 12 12"><path d="M6 1l1.5 3.2 3.5.4-2.6 2.3.7 3.4L6 8.5 2.9 10.3l.7-3.4L1 4.6l3.5-.4z"/></svg>
-                      ${topPick.rating?.toFixed(1) || '—'}
-                    </div>
-                  </div>
-                  <div class="r-card-meta">
-                    <span>${topPick.cuisine || 'Restaurant'}</span><span class="dot"></span><span>${topPick.distance != null ? topPick.distance + ' mi' : 'Nearby'}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          `;
-          document.getElementById('topPickCard').onclick = () => {
-            this.state.activeMatch = topPick;
-            Router.go('match/' + topPick.id);
-          };
-        }
-      }
-
-      this.renderFeed(restaurants);
+      this.refreshHomeContent(loc, dna);
     } catch (err) {
       document.getElementById('feed').innerHTML = `
         <div class="empty">
@@ -2081,14 +2082,80 @@ const App = {
     }
   },
 
-  filterFeed(cat) {
-    let filtered = (this.state._allRestaurants || []).filter(r => !r.isGasStation);
+  // Filter restaurants by active category
+  _filteredByCat(restaurants) {
+    const cat = this.state.activeCat || 'all';
+    let filtered = (restaurants || []).filter(r => !r.isGasStation);
     if (cat && cat !== 'all') {
-      filtered = filtered.filter(r => (r.cuisineCategory || '').toLowerCase().includes(cat) || (r.cuisine || '').toLowerCase().includes(cat));
+      filtered = filtered.filter(r =>
+        (r.cuisineCategory || '').toLowerCase().includes(cat) ||
+        (r.cuisine || '').toLowerCase().includes(cat)
+      );
     }
     if (this.state.searchQuery) {
-      filtered = filtered.filter(r => (r.name || '').toLowerCase().includes(this.state.searchQuery) || (r.cuisine || '').toLowerCase().includes(this.state.searchQuery));
+      filtered = filtered.filter(r =>
+        (r.name || '').toLowerCase().includes(this.state.searchQuery) ||
+        (r.cuisine || '').toLowerCase().includes(this.state.searchQuery)
+      );
     }
+    return filtered;
+  },
+
+  // Refresh top pick + feed when category or search changes
+  refreshHomeContent(loc, dna) {
+    const filtered = this._filteredByCat(this.state._allRestaurants || []);
+    const cat = this.state.activeCat || 'all';
+    const ctx = getContext();
+
+    // Update top pick
+    const pickEl = document.getElementById('topPick');
+    if (pickEl) {
+      const topPick = recommend('familiar', filtered, dna);
+      if (topPick) {
+        const img = API.imageUrl(topPick.imagePath);
+        const mealLabel = ctx.meal === 'breakfast' ? 'Breakfast' : ctx.meal === 'lunch' ? 'Lunch' : ctx.meal === 'afternoon' ? 'This Afternoon' : ctx.meal === 'latenight' ? 'Tonight' : 'Dinner';
+        const catLabel = cat !== 'all' ? cat.charAt(0).toUpperCase() + cat.slice(1) + ' ' : '';
+        pickEl.innerHTML = `
+          <div class="section-hdr" style="padding-bottom:var(--s2);">
+            <h2>Top ${catLabel}Pick for ${mealLabel}</h2>
+          </div>
+          <div style="padding:0 var(--s4) var(--s3);">
+            <div class="r-card" data-rid="${topPick.id}" style="border:2px solid var(--primary);cursor:pointer;" id="topPickCard">
+              ${img ? '<img class="r-card-img" src="' + img + '" alt="' + topPick.name + '" loading="lazy" style="height:160px;" />' : ''}
+              <div class="r-card-body">
+                <div class="r-card-row">
+                  <div class="r-card-name">${topPick.name}</div>
+                  <div class="r-card-rating">
+                    <svg viewBox="0 0 12 12"><path d="M6 1l1.5 3.2 3.5.4-2.6 2.3.7 3.4L6 8.5 2.9 10.3l.7-3.4L1 4.6l3.5-.4z"/></svg>
+                    ${topPick.rating?.toFixed(1) || '—'}
+                  </div>
+                </div>
+                <div class="r-card-meta">
+                  <span>${topPick.cuisine || 'Restaurant'}</span><span class="dot"></span><span>${'$'.repeat(Math.max(1, topPick.priceLevel || 1))}</span><span class="dot"></span><span>${topPick.distance != null ? topPick.distance + ' mi' : 'Nearby'}</span>
+                </div>
+                ${openStatusHtml(topPick)}
+              </div>
+            </div>
+          </div>
+        `;
+        document.getElementById('topPickCard').onclick = () => {
+          this.state.activeMatch = topPick;
+          Router.go('match/' + topPick.id);
+        };
+      } else {
+        pickEl.innerHTML = '';
+      }
+    }
+
+    // Update section header
+    const sectionHdr = document.querySelector('.section-hdr:last-of-type h2');
+    if (sectionHdr) {
+      sectionHdr.textContent = cat !== 'all'
+        ? cat.charAt(0).toUpperCase() + cat.slice(1) + ' near you'
+        : 'Near you';
+    }
+
+    // Update feed
     this.renderFeed(filtered);
   },
 
@@ -2454,7 +2521,7 @@ const App = {
             <div style="display:flex;align-items:start;justify-content:space-between;gap:12px;">
               <div class="match-name">${r.name}</div>
               <button id="saveToggle" data-tooltip="${isSaved ? 'Saved' : 'Save'}" style="flex-shrink:0;width:40px;height:40px;display:grid;place-items:center;border-radius:50%;background:var(--bg-2);">
-                ${isSaved ? Icons.heart.replace('fill="none"', `fill="var(--danger)" stroke="var(--danger)"`) : Icons.heart}
+                ${isSaved ? Icons.heartFilled : Icons.heart}
               </button>
             </div>
             <div class="match-meta">${r.cuisine} · ${'$'.repeat(Math.max(1, r.priceLevel))} · ${r.distance != null ? r.distance + ' mi away' : 'nearby'} · ${r.rating?.toFixed(1) || '—'} stars</div>
@@ -2471,10 +2538,17 @@ const App = {
               </div>
             ` : ''}
 
-            <div class="wait-badge ${(() => { const w = estimateWaitTime(r); return w.level; })()}" style="margin-top:var(--s4);">
-              <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="8" r="6.5"/><path d="M8 4.5v4l2.5 1.5"/></svg>
-              ${estimateWaitTime(r).label}
-            </div>
+            ${(() => {
+              const w = estimateWaitTime(r);
+              return '<div class="wait-badge ' + w.level + '" style="margin-top:var(--s4);flex-direction:column;align-items:flex-start;gap:2px;">'
+                + '<div style="display:flex;align-items:center;gap:6px;">'
+                + '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="8" r="6.5"/><path d="M8 4.5v4l2.5 1.5"/></svg>'
+                + '<span style="font-weight:700;">' + w.label + '</span>'
+                + '<span style="opacity:0.7;font-size:11px;">· ' + w.comparison + '</span>'
+                + '</div>'
+                + '<div style="font-size:10px;opacity:0.6;padding-left:20px;">Based on ' + w.source + '</div>'
+                + '</div>';
+            })()}
 
             <div class="match-actions">
               ${mapsUrl ? `
@@ -2483,7 +2557,7 @@ const App = {
                 </a>` : ''}
               ${r.delivery && r.doorDashUrl ? `
                 <a class="match-action delivery" href="${r.doorDashUrl}" target="_blank" rel="noopener">
-                  <span class="act-icon">${Icons.truck}</span><span>Delivery</span><span class="act-arrow">${Icons.chevron}</span>
+                  <span class="act-icon">${Icons.truck}</span><span>Delivery <span style="font-weight:400;opacity:0.7;font-size:12px;">via DoorDash</span></span><span class="act-arrow">${Icons.chevron}</span>
                 </a>` : ''}
               ${r.phone ? `
                 <a class="match-action call" href="tel:${r.phone}">
