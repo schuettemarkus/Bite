@@ -2966,19 +2966,45 @@ const App = {
   },
 
   summarizeDNA(dna) {
+    const parts = [];
+
+    // Cuisine preferences
     const top = Object.entries(dna.cuisines)
       .filter(([_, v]) => v > 0.55)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 3)
       .map(([k]) => k);
-    if (top.length === 0) return 'Bite is still learning what you like. Swipe a few rounds to fill in the picture.';
-    const intro = top.length === 1
-      ? `You tend to gravitate toward <em>${top[0]}</em>.`
-      : `You tend to gravitate toward <em>${top.slice(0, -1).join(', ')}</em> and <em>${top.at(-1)}</em>.`;
-    const advText = dna.adventurousness > 0.65 ? 'You love discovering new spots.'
-                  : dna.adventurousness < 0.35 ? 'You know what you like.'
-                  : 'You mix favorites with fresh finds.';
-    return `${intro} ${advText}`;
+    if (top.length === 0) {
+      parts.push('Bite is still learning your cuisine preferences. Swipe a few rounds to build your taste profile.');
+    } else if (top.length === 1) {
+      parts.push('You tend to gravitate toward <em>' + top[0] + '</em>.');
+    } else {
+      parts.push('You tend to gravitate toward <em>' + top.slice(0, -1).join(', ') + '</em> and <em>' + top.at(-1) + '</em>.');
+    }
+
+    // Discovery
+    if (dna.adventurousness > 0.65) parts.push('You love discovering new spots.');
+    else if (dna.adventurousness < 0.35) parts.push('You know what you like.');
+    else parts.push('You mix favorites with fresh finds.');
+
+    // Distance
+    if (dna.maxDistance <= 1) parts.push('You prefer walkable restaurants.');
+    else if (dna.maxDistance >= 8) parts.push('You\'re willing to travel for the right meal.');
+    else parts.push('You\'ll go up to ' + dna.maxDistance.toFixed(1) + ' mi for food.');
+
+    // Price
+    if (dna.priceRange[1] <= 1) parts.push('Budget-friendly is your sweet spot.');
+    else if (dna.priceRange[1] >= 4) parts.push('All price ranges are on the table.');
+    else parts.push('You like to keep it in the ' + '$'.repeat(dna.priceRange[0]) + '–' + '$'.repeat(dna.priceRange[1]) + ' range.');
+
+    // Diet
+    if (dna.diet?.length) {
+      const labels = { vegetarian: 'Vegetarian', vegan: 'Vegan', glutenfree: 'Gluten-free', halal: 'Halal', kosher: 'Kosher', pescatarian: 'Pescatarian', dairyfree: 'Dairy-free' };
+      const dietStr = dna.diet.map(function(d) { return labels[d] || d; }).join(', ');
+      parts.push('Dietary: ' + dietStr + '.');
+    }
+
+    return parts.join(' ');
   },
 
   // ─── Saved ───────────────────────────────────────────────────────
@@ -3640,7 +3666,27 @@ setTimeout(() => Onboard.show(), 600);
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('service-worker.js').catch(() => {});
+    navigator.serviceWorker.register('service-worker.js').then(reg => {
+      // Check for updates every 60 seconds
+      setInterval(() => reg.update(), 60000);
+
+      // When a new version is found, activate it and reload
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        if (!newWorker) return;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'activated' && navigator.serviceWorker.controller) {
+            // New version active — reload to get latest
+            window.location.reload();
+          }
+        });
+      });
+    }).catch(() => {});
+
+    // Also reload when the controlling service worker changes
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      window.location.reload();
+    });
   });
 }
 </script>

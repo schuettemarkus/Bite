@@ -21,6 +21,12 @@ echo "  Bite Deploy Pipeline"
 echo "  $(date '+%Y-%m-%d %H:%M:%S')"
 echo "═══════════════════════════════════════════════════"
 
+# ─── 0. Bump service worker cache version ────────────
+DEPLOY_TS=$(date '+%Y%m%d%H%M%S')
+sed -i.bak "s/const CACHE_VERSION = '.*'/const CACHE_VERSION = 'bite-${DEPLOY_TS}'/" web/service-worker.js
+rm -f web/service-worker.js.bak
+echo "  Cache version: bite-${DEPLOY_TS}"
+
 # ─── 1. Pre-deploy QA ────────────────────────────────
 echo ""
 echo "▶ Step 1: Pre-deploy QA (current production)"

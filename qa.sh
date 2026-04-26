@@ -161,8 +161,11 @@ except Exception as e:
   check "HTML parses without errors" "$([ "$HTML_ERRORS" = "OK" ] && echo true || echo false)"
 
   # No hardcoded API keys (exact pattern for Google keys)
-  LEAKED_KEY=$(grep -cE 'AIza[A-Za-z0-9_-]{30,}' "$FRONTEND_HTML" 2>/dev/null || echo "0")
-  check "No API keys in frontend source" "$([ "$LEAKED_KEY" = "0" ] && echo true || echo false)"
+  if grep -qE 'AIza[A-Za-z0-9_-]{30,}' "$FRONTEND_HTML" 2>/dev/null; then
+    check "No API keys in frontend source" "false"
+  else
+    check "No API keys in frontend source" "true"
+  fi
 
   # Critical objects exist
   HAS_ROUTER=$(grep -c 'const Router' "$FRONTEND_HTML" 2>/dev/null || echo "0")
