@@ -1043,9 +1043,10 @@ a.r-card-rating:hover { background: var(--border); }
   place-items: center;
   padding: var(--s4);
   opacity: 0;
+  pointer-events: none;
   transition: opacity 400ms var(--ease);
 }
-.onboard-overlay.show { opacity: 1; }
+.onboard-overlay.show { opacity: 1; pointer-events: all; }
 .onboard-card {
   background: var(--surface);
   border-radius: var(--r-xl);
