@@ -2495,8 +2495,8 @@ const App = {
           <div class="match-body">
             <div style="display:flex;align-items:start;justify-content:space-between;gap:12px;">
               <div class="match-name">${r.name}</div>
-              <button id="saveToggle" data-tooltip="${isSaved ? 'Saved' : 'Save'}" style="flex-shrink:0;width:40px;height:40px;display:grid;place-items:center;border-radius:50%;background:var(--bg-2);">
-                ${isSaved ? Icons.heartFilled : Icons.heart}
+              <button id="saveToggle" data-tooltip="${isSaved ? 'Saved' : 'Save'}" style="flex-shrink:0;width:36px;height:36px;display:grid;place-items:center;border-radius:50%;background:var(--bg-2);">
+                <span style="display:flex;width:18px;height:18px;">${isSaved ? Icons.heartFilled : Icons.heart}</span>
               </button>
             </div>
             <div class="match-meta">${r.cuisine} · ${'$'.repeat(Math.max(1, r.priceLevel))} · ${r.distance != null ? r.distance + ' mi away' : 'nearby'} · ${r.rating?.toFixed(1) || '—'} stars</div>
