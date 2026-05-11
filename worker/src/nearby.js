@@ -93,10 +93,34 @@ export async function handleNearby(request, env, ctx) {
 
   const places = data.places || [];
 
-  // Enforce 4-star minimum BEFORE caching.
-  const filtered = places.filter(
-    p => typeof p.rating === 'number' && p.rating >= MIN_RATING
-  );
+  // Types that should never appear — even if Google returns them as dual-typed
+  const EXCLUDED_PRIMARY = new Set([
+    'gas_station', 'fuel_station', 'ev_charging_station',
+    'grocery_store', 'supermarket', 'convenience_store',
+    'drugstore', 'pharmacy', 'hospital', 'dentist', 'doctor',
+    'car_wash', 'car_repair', 'car_dealer', 'parking',
+    'lodging', 'hotel', 'motel', 'campground',
+    'shopping_mall', 'department_store', 'clothing_store',
+    'gym', 'stadium', 'movie_theater', 'amusement_park',
+    'church', 'school', 'university', 'library',
+    'bank', 'atm', 'post_office', 'laundry',
+  ]);
+
+  // Enforce 4-star minimum + exclude non-restaurant types BEFORE caching.
+  const filtered = places.filter(p => {
+    if (typeof p.rating !== 'number' || p.rating < MIN_RATING) return false;
+    // Exclude if primary type is non-restaurant
+    if (p.primaryType && EXCLUDED_PRIMARY.has(p.primaryType)) return false;
+    // Exclude if any top-level type is in the exclusion list and no restaurant type present
+    const types = p.types || [];
+    const hasRestaurantType = types.some(t =>
+      t.includes('restaurant') || t === 'cafe' || t === 'bakery' ||
+      t === 'coffee_shop' || t === 'meal_takeaway' || t === 'food'
+    );
+    const hasExcludedType = types.some(t => EXCLUDED_PRIMARY.has(t));
+    if (hasExcludedType && !hasRestaurantType) return false;
+    return true;
+  });
 
   // Cache the raw filtered list (without computed distance — that varies per user).
   ctx.waitUntil(
